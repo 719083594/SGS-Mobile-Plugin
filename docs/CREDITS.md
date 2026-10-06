@@ -1,0 +1,34 @@
+# 致谢与数据/API 来源
+
+本项目为原创 Node.js 插件，源码采用 GPL-3.0-or-later。以下列出实际使用的数据源、调用协议和研究依据；列入致谢不表示接口提供方为第三方插件提供官方支持或背书。核验日期与证据见 [API 审计](API-AUDIT.md)。
+
+## 官方内容与社区
+
+感谢 [杭州游卡网络技术有限公司 / 三国杀移动版](https://www.sanguosha.cn/) 提供移动版官方资讯、活动公告、武将/技能资料、公开皮肤图、攻略及模式介绍。插件原创解析 `/pc/news-list-*`、`news-detail-*`、`hero-list`、`hero-detail-*`、`guide-list-*`、`guide-info-*`、`mode-info-*` 公开网页，提供原文来源。官网将池和概率图片仍以原文为准，公开皮肤图不代表玩家拥有。
+
+感谢官方「[三国咸话](https://xh.sanguosha.cn/web/2)」、[旧版社区](https://xianhua.sanguosha.cn/) 和 [APP 介绍](https://hi.sanguosha.cn/pc/index.html)。用户所称“三国闲话”对应官方名称“三国咸话”。本项目仅接三国杀移动版，不引用 OL、十周年、欢乐三国杀或其他版本个人资料接口。
+
+## 实际接入的 API 与授权协议
+
+| 来源主机 | 接入端点 | 用途与状态 |
+| --- | --- | --- |
+| [wxforum.sanguosha.cn](https://wxforum.sanguosha.cn/api/topics?page=1&category_id=0&include=user,label&has_label=0&just_video=0) | `/api/topics`、`/api/searchV2/topics`、`/api/rank/today`、`theme`、`week`、`all` | 已实测匿名读取帖子、攻略搜索、帖子/话题热度及社区人气榜；过滤无关用户/IP/地址字段 |
+| [hi-gateway.sanguosha.cn](https://hi.sanguosha.cn/pc/index.html) | `/api/login/v1/qrcode`：POST 生成、GET 查询 | 三国咸话 APP 扫码协议已接入；实测生成和待扫码状态，尚未完成用户实扫 |
+| [wxforum.sanguosha.cn](https://xianhua.sanguosha.cn/) | `/api/profile`、`/api/user/getGameSummary`、`getGameForce`、`getGameRecord`、`getGameRecordList`、`/api/general/getMyLike` | APP 会话的本人社区资料、概览、将力、战绩统计/最近对局、社区收藏协议；真实本人响应待验收 |
+| [hi-gateway.sanguosha.cn](https://hi.sanguosha.cn/pc/index.html) | `/api/game/v2/general/gameInfo`、`property`、`generalSkins`、`abilities`、`bestGeneral` | APP 会话的本人游戏资料、资产、皮肤、能力、擅长武将协议；具体字段待实扫验收 |
+| [api-xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/sgxh/pcScan/generateId`、`/sgxh/pcScan/poll` | 新版社区微信扫码生成/轮询，已实测待扫码状态 |
+| [xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/web/api/auth/login`、`/web/api/auth/logout` | 新版扫码票据交换网页会话及注销协议；本人完成扫码后的真实交换待验收 |
+| [api-xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/user/userInfo`、`/user/gameSummary`、`/user/getAllOtherGameUser` | 新版会话的本人资料、游戏概览、其他游戏角色映射协议；未与旧版令牌混用，真实本人响应待验收 |
+
+受保护接口名称来自官方前端；匿名请求已确认若干接口需要认证。未扫码成功不生成假会话，也不将社区登录宣称为官号或华为游戏渠道登录。没有接入手机验证码/密码登录，没有调用未核实的游戏角色绑定或华为 OAuth 端点。
+
+协议研究依据为官方公开的 [旧社区公共 API 定义](https://xianhua.sanguosha.cn/_nuxt/baseApi.8d2df587.js)、[公开列表](https://xianhua.sanguosha.cn/_nuxt/home.f8ac2989.js)、[武将/攻略定义](https://xianhua.sanguosha.cn/_nuxt/generalApi.059ef62f.js)、[个人资料定义](https://xianhua.sanguosha.cn/_nuxt/recordApi.2943a9d0.js)、[登录定义](https://xianhua.sanguosha.cn/_nuxt/login.0bde981d.js)、[APP 扫码界面](https://xianhua.sanguosha.cn/_nuxt/default.fd6ebdba.js)，以及 [新版社区授权资源](https://cf-resources.sanguosha.cn/web/c2d4aC13ZWI/_next/static/chunks/400-e9aa5397ef7c35d9.js)。构建文件名会随官网更新变化；插件原创调用协议，没有复制官方 APP/网站实现源码，也不发布含用户元数据的原始研究文件。
+
+## 登录研究与软件依赖
+
+- [移动版第三方 SDK 清单](https://www.sanguosha.cn/sgs_agreement/SDK_info.html) 与 [华为 Account Kit](https://developer.huawei.com/consumer/cn/sdk/account-kit)：仅作为华为渠道能力研究依据，当前没有连接华为游戏账户 API。华为 OpenID 与应用有关，独立授权不能自动读取三国杀移动版角色；依据 [华为接入说明](https://developer.huawei.com/consumer/cn/doc/quickapp-guides/quickapp-access-account-kit-0000001079648144) 与 [令牌交换接口说明](https://developer.huawei.com/consumer/cn/doc/doccenter-references/api/account-api-obtain-user-token)。
+- [node-qrcode / soldair](https://github.com/soldair/node-qrcode)，MIT：在本机编码官方二维码内容，不将扫码凭据发送到第三方绘码网站。其他随包依赖的许可证保留在各自 npm 包内。
+- [Node.js](https://nodejs.org/)，MIT 及其第三方组件许可证：使用原生 ESM、Fetch、加密、文件与测试接口。
+- [TRSS-Yunzai](https://github.com/TimeRainStarSky/Yunzai)：Bot 命令适配目标；核心查询也可独立使用。橙汁的 `orangejuice.plugin.json` 是实例配置声明，未向插件复制橙汁实现代码。
+
+游戏、社区的内容、名称、图片和标识属于对应权利人，社区投稿属于其作者。转载请遵守原站条款与作者要求；插件保留原文链接。公开来源和登录协议可能变化，接口失败时明确返回限制，不伪造个人数据或认证成功。

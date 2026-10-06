@@ -1,0 +1,8 @@
+node_modules/
+data/
+config/local.json
+.env
+.env.*
+*.log
+*.zip
+*.bundle

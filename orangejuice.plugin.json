@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "title": "三国移动助手",
+  "description": "三国移动助手：三国杀移动版官方公开资料与社区查询",
+  "version": "0.1.0",
+  "commands": [
+    "#三国帮助",
+    "#三国资讯",
+    "#三国活动",
+    "#三国公告",
+    "#三国武将 名称或ID",
+    "#三国详情 公告ID",
+    "#三国攻略 关键词",
+    "#三国模式 名称",
+    "#三国社区 关键词",
+    "#三国热榜 today",
+    "#三国社区授权",
+    "#三国扫码状态",
+    "#三国个人资料",
+    "#三国战绩",
+    "#三国近期战绩",
+    "#三国将力",
+    "#三国资产",
+    "#三国皮肤",
+    "#三国能力",
+    "#三国擅长武将",
+    "#三国游戏资料",
+    "#三国武将收藏",
+    "#三国退出授权",
+    "#三国官号登录",
+    "#三国华为登录",
+    "#三国绑定 官号或华为 ID",
+    "#三国账户",
+    "#三国状态"
+  ],
+  "commandTable": [
+    {
+      "title": "三国移动助手",
+      "command": "#三国帮助",
+      "description": "真实可用范围及未接通功能见帮助；账户操作仅操作本人，授权仅私聊。",
+      "permission": "all",
+      "category": "游戏助手"
+    }
+  ],
+  "configs": [
+    {
+      "id": "sanguoshamobile-plugin",
+      "title": "三国移动助手实例参数",
+      "file": "config/local.json",
+      "ownerOnly": true,
+      "defaults": {
+        "enabled": true,
+        "adapter": "none",
+        "prefix": "#三国",
+        "timeoutMs": 12000,
+        "cacheSeconds": 300,
+        "maxReplyChars": 3500,
+        "maxItems": 8,
+        "credentialsKey": "",
+        "masters": [],
+        "officialSite": "https://www.sanguosha.cn/",
+        "communitySite": "https://xh.sanguosha.cn/web/2",
+        "channels": {
+          "official": true,
+          "huawei": true
+        },
+        "personalDataEnabled": true
+      },
+      "secretFields": [
+        "credentialsKey"
+      ],
+      "fields": [
+        {
+          "path": "enabled",
+          "label": "启用插件",
+          "type": "boolean"
+        },
+        {
+          "path": "adapter",
+          "label": "机器人适配器（需重启）",
+          "type": "string",
+          "enum": [
+            "none",
+            "yunzai"
+          ]
+        },
+        {
+          "path": "prefix",
+          "label": "命令前缀",
+          "type": "string"
+        },
+        {
+          "path": "timeoutMs",
+          "label": "接口最长等待毫秒",
+          "type": "integer"
+        },
+        {
+          "path": "cacheSeconds",
+          "label": "公开数据缓存秒数",
+          "type": "integer"
+        },
+        {
+          "path": "maxReplyChars",
+          "label": "回复最大字符数",
+          "type": "integer"
+        },
+        {
+          "path": "maxItems",
+          "label": "公开列表最大条目数",
+          "type": "integer"
+        },
+        {
+          "path": "credentialsKey",
+          "label": "账户加密密钥（修改会使已有凭据无法解密）",
+          "type": "string",
+          "secret": true,
+          "description": "仅主人可见与修改，留在实例文件中，不提交GitHub。不要改动正在使用的密钥。",
+          "readonly": true
+        },
+        {
+          "path": "masters",
+          "label": "主人ID列表",
+          "type": "array"
+        },
+        {
+          "path": "officialSite",
+          "label": "已核验移动版官网",
+          "type": "string",
+          "readonly": true
+        },
+        {
+          "path": "communitySite",
+          "label": "已核验三国咸话官网",
+          "type": "string",
+          "readonly": true
+        },
+        {
+          "path": "channels.official",
+          "label": "允许登记官号身份",
+          "type": "boolean"
+        },
+        {
+          "path": "channels.huawei",
+          "label": "允许登记华为渠道身份",
+          "type": "boolean"
+        },
+        {
+          "path": "personalDataEnabled",
+          "label": "允许社区授权和本人数据查询",
+          "type": "boolean"
+        }
+      ]
+    }
+  ]
+}
