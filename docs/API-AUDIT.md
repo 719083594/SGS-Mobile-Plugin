@@ -1,6 +1,8 @@
 # 三国杀移动版接口审计
 
-核验日期：2026-10-07（Asia/Shanghai）。仅查看官方公开网页/前端协议和匿名只读接口；未提交密码、验证码或账号凭据，未下载 APK，未改 Bot。插件原创实现，没有复制官方 APP/网站源代码。
+核验日期：2026-10-07（Asia/Shanghai）。本记录包含早期公开网页/前端协议、匿名只读检查，以及后续真实用户三国咸话 APP 扫码和本人接口验收。未收集密码或验证码，未下载 APK。插件原创实现，没有复制官方 APP/网站源代码。授权会话仅由实例 AES 保存，公开审计不包含账号、凭据、二维码内容或原始个人响应。
+
+**当前结论：APP 实扫成功，线上 11 类本人接口均成功返回；官网资讯、刘备详情及 today 热榜成功。字段业务含义尚未与 APP 一一核对；官号游戏登录和华为渠道游戏登录仍未接通。** 脱敏结果见 [VERIFICATION.md](VERIFICATION.md)。以下匿名检查记录用于说明未授权时的接口边界，不代表当前本人授权仍未完成。
 
 ## 产品身份与社区功能
 
@@ -27,7 +29,7 @@
 
 ## 个人数据接口与登录边界
 
-已在官方前端发现以下真实受保护协议，并进行了无凭据请求：
+早期在官方前端发现以下真实受保护协议，并进行了无凭据请求。后续 APP 本人授权成功后的状态另列在验收记录，不能用匿名认证失败推断合法授权也无法读取：
 
 | 接口 | 匿名实测 |
 | --- | --- |
@@ -37,13 +39,13 @@
 | `https://hi-gateway.sanguosha.cn/api/game/v2/general/gameInfo` | HTTP 200、业务 code 401，“授权失败” |
 | `https://api-xh.sanguosha.cn/user/gameSummary?gameId=2` | HTTP 401、业务 code1003，未登录或 token 过期 |
 
-旧前端还声明 `user/getGameForce`、`user/getGameRecord?model={0..4}`、`user/getGameRecordList`、`game/v2/general/property`、`generalSkins`、`abilities`、`bestGeneral` 等个人接口。证据：<https://xianhua.sanguosha.cn/_nuxt/recordApi.2943a9d0.js>。它们未经本人合法会话实测，不能宣称本插件已能显示拥有武将/皮肤、余额、段位、完整战绩或个人胜率。
+旧前端还声明 `user/getGameForce`、`user/getGameRecord?model={0..4}`、`user/getGameRecordList`、`game/v2/general/property`、`generalSkins`、`abilities`、`bestGeneral` 等个人接口。证据：<https://xianhua.sanguosha.cn/_nuxt/recordApi.2943a9d0.js>。这些已在后续真实 APP 会话中成功返回；但尚未与 APP 逐字段核对，不能据接口名称或结构计数宣称完整拥有武将/皮肤、余额、段位、历史战绩或胜率已全部正确解读。
 
-### 官号
+### 社区授权与官号游戏登录
 
 新版官网社区前端公开的授权流程是微信扫码：向 `https://api-xh.sanguosha.cn/sgxh/pcScan/generateId` POST `{gameId:2}`；扫码页是 `https://xh.sanguosha.cn/web/scan/weixin?scanId=...`；`/sgxh/pcScan/poll` 返回 `appletToken` 后，官网自己的 `/web/api/auth/login` 接收 `{ticket:...}`；官网客户端从 `WEB_SESSIONID` cookie 获得 Authorization。证据：<https://cf-resources.sanguosha.cn/web/c2d4aC13ZWI/_next/static/chunks/400-e9aa5397ef7c35d9.js>。
 
-旧社区有 `app/sendLoginPhoneCode`、`app/phoneLogin` 和社区 QR 授权，证据 <https://xianhua.sanguosha.cn/_nuxt/login.0bde981d.js>。这两个流程是**社区登录**，本次没有提交请求/扫码/验证码，也未核实官号游戏角色绑定流程与客户端授权资格；不能混同为“官号游戏登录”。因此插件给真实官方入口、角色身份登记、明确 unsupported 状态，不猜游戏密码登录接口。
+旧社区声明 `app/sendLoginPhoneCode`、`app/phoneLogin` 和社区 QR 授权，证据 <https://xianhua.sanguosha.cn/_nuxt/login.0bde981d.js>。插件只接社区扫码，没有接手机验证码/密码登录。默认 APP 扫码已由真实用户完成并取得通过本人资料验证的社区会话；这不证明官号游戏授权或游戏角色渠道归属。官号游戏登录仍未接通，身份登记明确为未认证，不猜游戏密码登录接口。
 
 ### 华为渠道
 
@@ -57,7 +59,7 @@
 
 公开资料插件技术可行：官网公告/将池/概率原文、武将详情/技能/皮肤图、官方攻略/模式、社区资讯/攻略搜索、热榜和公开作者排行均有真实来源。信息聚合、检索、订阅、新公告去重、缓存、来源标记、导出可以独立实现。
 
-用户希望“绝大多数个人信息都能看”和“官号、华为登录”不能在现有证据下宣称完成。仍缺该游戏可供第三方使用的授权协议/凭据、渠道角色映射、本人会话和对应字段实测。官方游戏或官方三国咸话内的登录可由用户直接完成；后续接入应基于其本人授权的受支持协议/会话，严格区分两个渠道并避免上传敏感数据。
+现已取得真实用户授权的社区会话并成功读取 11 类本人接口。用户希望的“绝大多数个人信息”和“官号、华为游戏登录”仍不能整体宣称完成：字段业务含义与 APP 覆盖范围尚待逐项核对，游戏渠道授权与角色映射未证实，完整拥有武将列表和完整游戏排行榜也未验证。后续须继续使用本人合法授权，区分社区访问与两个游戏渠道，不发布敏感数据。
 
 ## 原创插件模块
 
@@ -69,12 +71,14 @@
 
 继续查验官方旧社区的登录弹窗 <https://xianhua.sanguosha.cn/_nuxt/default.fd6ebdba.js>，其文案明确为“打开三国咸话APP扫一扫登录”；`POST https://hi-gateway.sanguosha.cn/api/login/v1/qrcode` 传 JSON `null`，返回 `{code:0,data:{qrcode:...}}`；`GET` 同端点传 `qrcode` 查询参数，未扫码返回 `{code:0,data:{token:""}}`。官方前端直接保存扫码后的 `data.token` 作为 Authorization，再查询 wxforum `/profile`。这是真实社区授权，不是游戏密码登录，也没有已证实的华为渠道标识。
 
-新版扫码匿名实测：`generateId` 返回 code1000、非空 scanId、`expireIn:300`；未扫码 `poll` 返回 code1000、`status:"pending"`、空 appletToken。两套流程均只生成临时二维码并查询未扫码状态，本次没有任何用户扫码或取得真实会话。旧版弹窗轮询为每2秒、60轮，插件采用120秒轮询窗口并注明这是前端窗口而非服务器返回的精确有效期。
+早期新版扫码匿名检查：`generateId` 返回 code1000、非空 scanId、`expireIn:300`；待扫码 `poll` 返回 code1000、`status:"pending"`、空 appletToken。新版微信方式目前仍只完成生成/待扫码检查，票据交换及其本人查询需要单独授权验收。默认旧版 APP 方式后来已由真实用户扫码成功。旧版弹窗轮询为每2秒、60轮，插件采用120秒轮询窗口并注明这是前端窗口而非服务器返回的精确有效期。官方 UI 将返回的 `data.qrcode` 直接编码成二维码，不额外添加 URI 前缀；当前 APP 实扫成功也验证了此处理方式。
 
 新增原创模块 `lib/community-auth.mjs`：优先支持 `app-qr-v1`（三国咸话APP），也支持 `pc-scan-v7`（微信扫码，需官方网页交换WEB_SESSIONID）。`start` 返回待扫码请求；`poll` 取得凭证后必须再通过官方本人资料端点验证，才返回社区授权 session。待扫码、过期、失败都不会标记成功。模块不保存或打印会话；Bot核心负责用AES加密保存、只允许本人私聊查询。
 
-旧版有效社区会话可调用的**协议已核实但本人字段尚未现场验证**查询：profile、summary、force、records（0全部/1排位/2身份/3国战/4斗地主）、recent（`user/getGameRecordList`，官方前端实参 `{model,page}`）、gameInfo、assets、skins、abilities、bestGeneral、favorites。新版仅接已核实的profile、summary、roles（`user/getAllOtherGameUser`返回角色映射来源）。不把旧版token投向未核实的新接口，不猜客户端凭据，不编造绑定接口。官方角色尚未关联时，业务code20020返回需在官方APP关联角色。
+默认 APP 会话已在线成功调用 11 类本人查询：profile、summary、force、records（0全部/1排位/2身份/3国战/4斗地主）、recent（`user/getGameRecordList`，官方前端实参 `{model,page}`）、gameInfo、assets、skins、abilities、bestGeneral、favorites。逐项结构计数见验收记录，字段业务含义尚未与 APP 一一核对。`favorites` 来自 `general/getMyLike`，仅为社区收藏；本次空列表不代表玩家没有武将。新版仅接已核实的 profile、summary、roles（`user/getAllOtherGameUser` 返回角色映射来源），仍待该协议本人授权验收。不混用两套凭证，不猜客户端凭据，不编造绑定接口。官方角色尚未关联时，业务code20020返回需在官方APP关联角色。
 
-私有返回数据递归去掉Token/Cookie/密码/手机号/邮箱/实名/身份证/IP/设备标识等字段，保留本人授权的武将、皮肤、资产和统计。社区授权始终标记 `gameAuthenticated:false`、`channelVerified:false`；官号与华为渠道登录仍保留原有 unsupported 状态。旧社区未找到服务器撤销端点，退出只删除插件本地加密会话并准确告知，未声称注销其他客户端。
+私有返回数据递归去掉Token/Cookie/密码/手机号/邮箱/实名/身份证/IP/设备标识等字段，保留本人授权的业务响应。社区授权始终标记 `gameAuthenticated:false`、`channelVerified:false`；官号与华为游戏渠道登录仍为未接通。身份、session 和待扫码内容整体 AES 加密并按 QQ 隔离；旧身份 JSON 经加密回读及路径/旧文件一致性验证后才删除。退出仅清理本人授权并保留登记身份，旧社区远程撤销端点未核实，不宣称注销其他客户端。
 
-当前单元测试16项通过，覆盖两套扫码、本人验证、未扫码/过期、角色关联、凭据隐藏、固定端点、渠道登录隔离等。真实官网HTML解析已验证：588个武将、刘备3条分模式技能/8张公开皮肤图、15条公告、9条新手攻略、模式4个详情段、将池附2图。本机Node直连www.sanguosha.cn遇到连接超时，而PowerShell读取正常、社区API正常；Bot Linux部署需进一步现场烟测。测试并不意味着未执行的本人授权查询已成功。
+初审快照的官网 HTML 解析验证过588个武将、刘备3条分模式技能/8张公开皮肤图、15条公告、9条新手攻略、模式4个详情段和将池附2图；这些是当时页面快照计数，不保证未来官网条目不变。初审 Windows Node 曾直连官网超时，后续部署服务器已成功查询资讯、刘备详情、today 热榜，并完成真实 APP 扫码及 11 类本人接口请求。回归测试另覆盖协议、私聊隔离、凭据隐藏、固定端点、AES完整性、大小限制与跨进程锁；自动化测试与真实接口结果分别记录。
+
+Bot 个人 JSON 通过内存 Buffer 发送，大文件在内存中 gzip；CLI 只向终端输出数据，二维码提示去 Bot 获取，不再自动保存明文 JSON/二维码。该行为与用户自行保存收到的文件不同，插件不能替本人管理外部副本。

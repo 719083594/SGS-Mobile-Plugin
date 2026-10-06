@@ -13,14 +13,14 @@
 | 来源主机 | 接入端点 | 用途与状态 |
 | --- | --- | --- |
 | [wxforum.sanguosha.cn](https://wxforum.sanguosha.cn/api/topics?page=1&category_id=0&include=user,label&has_label=0&just_video=0) | `/api/topics`、`/api/searchV2/topics`、`/api/rank/today`、`theme`、`week`、`all` | 已实测匿名读取帖子、攻略搜索、帖子/话题热度及社区人气榜；过滤无关用户/IP/地址字段 |
-| [hi-gateway.sanguosha.cn](https://hi.sanguosha.cn/pc/index.html) | `/api/login/v1/qrcode`：POST 生成、GET 查询 | 三国咸话 APP 扫码协议已接入；实测生成和待扫码状态，尚未完成用户实扫 |
-| [wxforum.sanguosha.cn](https://xianhua.sanguosha.cn/) | `/api/profile`、`/api/user/getGameSummary`、`getGameForce`、`getGameRecord`、`getGameRecordList`、`/api/general/getMyLike` | APP 会话的本人社区资料、概览、将力、战绩统计/最近对局、社区收藏协议；真实本人响应待验收 |
-| [hi-gateway.sanguosha.cn](https://hi.sanguosha.cn/pc/index.html) | `/api/game/v2/general/gameInfo`、`property`、`generalSkins`、`abilities`、`bestGeneral` | APP 会话的本人游戏资料、资产、皮肤、能力、擅长武将协议；具体字段待实扫验收 |
+| [hi-gateway.sanguosha.cn](https://hi.sanguosha.cn/pc/index.html) | `/api/login/v1/qrcode`：POST 生成、GET 查询 | 真实用户已完成三国咸话 APP 扫码，官方本人验证成功，社区会话 AES 保存 |
+| [wxforum.sanguosha.cn](https://xianhua.sanguosha.cn/) | `/api/profile`、`/api/user/getGameSummary`、`getGameForce`、`getGameRecord`、`getGameRecordList`、`/api/general/getMyLike` | APP 会话的本人社区资料、概览、将力、战绩统计/最近对局、社区收藏线上均成功返回；字段业务含义待与 APP 逐项核对 |
+| [hi-gateway.sanguosha.cn](https://hi.sanguosha.cn/pc/index.html) | `/api/game/v2/general/gameInfo`、`property`、`generalSkins`、`abilities`、`bestGeneral` | APP 会话的本人游戏资料、资产、皮肤、能力、擅长武将线上均成功返回；字段业务含义待与 APP 逐项核对 |
 | [api-xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/sgxh/pcScan/generateId`、`/sgxh/pcScan/poll` | 新版社区微信扫码生成/轮询，已实测待扫码状态 |
-| [xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/web/api/auth/login`、`/web/api/auth/logout` | 新版扫码票据交换网页会话及注销协议；本人完成扫码后的真实交换待验收 |
-| [api-xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/user/userInfo`、`/user/gameSummary`、`/user/getAllOtherGameUser` | 新版会话的本人资料、游戏概览、其他游戏角色映射协议；未与旧版令牌混用，真实本人响应待验收 |
+| [xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/web/api/auth/login`、`/web/api/auth/logout` | 新版微信扫码票据交换网页会话及注销协议；微信方式的真实交换待单独授权验收 |
+| [api-xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/user/userInfo`、`/user/gameSummary`、`/user/getAllOtherGameUser` | 新版微信会话的本人资料、游戏概览、其他游戏角色映射协议；未与旧版令牌混用，待微信方式单独授权验收 |
 
-受保护接口名称来自官方前端；匿名请求已确认若干接口需要认证。未扫码成功不生成假会话，也不将社区登录宣称为官号或华为游戏渠道登录。没有接入手机验证码/密码登录，没有调用未核实的游戏角色绑定或华为 OAuth 端点。
+受保护接口名称来自官方前端；匿名请求已确认若干接口需要认证。APP 扫码与 11 类本人接口连通性已完成真实用户验收，微信方式仍按其单独证据记录；详情见 [脱敏验收](VERIFICATION.md)。社区登录不等于官号或华为游戏渠道登录，这两类游戏登录仍未接通。`general/getMyLike` 是社区收藏，不代表本人拥有武将；本次空收藏响应不代表没有武将。没有接入手机验证码/密码登录，没有调用未核实的游戏角色绑定或华为 OAuth 端点。
 
 协议研究依据为官方公开的 [旧社区公共 API 定义](https://xianhua.sanguosha.cn/_nuxt/baseApi.8d2df587.js)、[公开列表](https://xianhua.sanguosha.cn/_nuxt/home.f8ac2989.js)、[武将/攻略定义](https://xianhua.sanguosha.cn/_nuxt/generalApi.059ef62f.js)、[个人资料定义](https://xianhua.sanguosha.cn/_nuxt/recordApi.2943a9d0.js)、[登录定义](https://xianhua.sanguosha.cn/_nuxt/login.0bde981d.js)、[APP 扫码界面](https://xianhua.sanguosha.cn/_nuxt/default.fd6ebdba.js)，以及 [新版社区授权资源](https://cf-resources.sanguosha.cn/web/c2d4aC13ZWI/_next/static/chunks/400-e9aa5397ef7c35d9.js)。构建文件名会随官网更新变化；插件原创调用协议，没有复制官方 APP/网站实现源码，也不发布含用户元数据的原始研究文件。
 
