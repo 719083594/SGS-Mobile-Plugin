@@ -141,3 +141,41 @@ for(let n=0;n<6;n++){let written=false;for(let attempt=0;attempt<500;attempt++){
   assert.deepEqual(vault.get(OWNER).identities, []);
   assert.equal(fs.existsSync(vault.lockFile), false);
 });
+
+test('Windows access error with a currently ordinary lock is busy and preserves lock/ciphertext', {skip:process.platform!=='win32'}, t => {
+  for(const code of ['EPERM','EACCES']){
+    const {vault}=workspace(t);vault.set(OWNER,{counter:1});
+    const before=fs.readFileSync(vault.file,'utf8');fs.writeFileSync(vault.lockFile,'synthetic-existing-lock');
+    const actualOpen=fs.openSync;
+    try{
+      fs.openSync=(target,...args)=>{if(target===vault.lockFile)throw Object.assign(new Error('Synthetic exclusive-open error'),{code});return actualOpen.call(fs,target,...args);};
+      assert.throws(()=>vault.update(OWNER,current=>({...current,counter:2})),errorCode('STORAGE_BUSY'));
+    }finally{fs.openSync=actualOpen;}
+    assert.equal(fs.readFileSync(vault.lockFile,'utf8'),'synthetic-existing-lock');
+    assert.equal(fs.readFileSync(vault.file,'utf8'),before);
+  }
+});
+
+test('Windows access error without a current lock remains a storage failure', {skip:process.platform!=='win32'}, t => {
+  for(const code of ['EPERM','EACCES']){
+    const {vault}=workspace(t);vault.set(OWNER,{counter:1});const before=fs.readFileSync(vault.file,'utf8');
+    const actualOpen=fs.openSync;
+    try{
+      fs.openSync=(target,...args)=>{if(target===vault.lockFile)throw Object.assign(new Error('Synthetic exclusive-open error'),{code});return actualOpen.call(fs,target,...args);};
+      assert.throws(()=>vault.update(OWNER,current=>({...current,counter:2})),errorCode('STORAGE_FAILED'));
+    }finally{fs.openSync=actualOpen;}
+    assert.equal(fs.existsSync(vault.lockFile),false);assert.equal(fs.readFileSync(vault.file,'utf8'),before);
+  }
+});
+
+test('Windows lock replacement by a junction after path preparation is rejected without deleting it', {skip:process.platform!=='win32'}, t => {
+  const {root,vault}=workspace(t);vault.set(OWNER,{counter:1});const before=fs.readFileSync(vault.file,'utf8');
+  const outside=path.join(root,'synthetic-outside');fs.mkdirSync(outside);fs.writeFileSync(path.join(outside,'sentinel'),'preserve');
+  const actualOpen=fs.openSync;
+  try{
+    fs.openSync=(target,...args)=>{if(target===vault.lockFile){fs.symlinkSync(outside,vault.lockFile,'junction');throw Object.assign(new Error('Synthetic exclusive-open error'),{code:'EPERM'});}return actualOpen.call(fs,target,...args);};
+    assert.throws(()=>vault.update(OWNER,current=>({...current,counter:2})),errorCode('UNSAFE_PATH'));
+  }finally{fs.openSync=actualOpen;}
+  assert.equal(fs.lstatSync(vault.lockFile).isSymbolicLink(),true);
+  assert.equal(fs.readFileSync(path.join(outside,'sentinel'),'utf8'),'preserve');assert.equal(fs.readFileSync(vault.file,'utf8'),before);
+});

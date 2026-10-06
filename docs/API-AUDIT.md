@@ -41,19 +41,35 @@
 
 旧前端还声明 `user/getGameForce`、`user/getGameRecord?model={0..4}`、`user/getGameRecordList`、`game/v2/general/property`、`generalSkins`、`abilities`、`bestGeneral` 等个人接口。证据：<https://xianhua.sanguosha.cn/_nuxt/recordApi.2943a9d0.js>。这些已在后续真实 APP 会话中成功返回；但尚未与 APP 逐字段核对，不能据接口名称或结构计数宣称完整拥有武将/皮肤、余额、段位、历史战绩或胜率已全部正确解读。
 
+同日追加官方显示字段核验：PC 战绩页 `record.70e69d2f.js`、H5 战绩页 `record.5e722f27.js` 和资产页 `obtain.cb450439.js` 的 API 变量与中文标签绑定已用于原创格式器，覆盖 summary、force、records、recent、assets、gameInfo 的已证实字段。源码链接、逐项映射、胜率公式及未解释项见 [PERSONAL-FIELDS.md](PERSONAL-FIELDS.md)。这次只读取公开前端，不请求真实账号接口；中文标签核验不等于真实 APP 数据完整验收。本人命令追加 `导出` 可取得完整已脱敏 JSON，未知字段不因摘要而丢弃。
+
 ### 社区授权与官号游戏登录
 
 新版官网社区前端公开的授权流程是微信扫码：向 `https://api-xh.sanguosha.cn/sgxh/pcScan/generateId` POST `{gameId:2}`；扫码页是 `https://xh.sanguosha.cn/web/scan/weixin?scanId=...`；`/sgxh/pcScan/poll` 返回 `appletToken` 后，官网自己的 `/web/api/auth/login` 接收 `{ticket:...}`；官网客户端从 `WEB_SESSIONID` cookie 获得 Authorization。证据：<https://cf-resources.sanguosha.cn/web/c2d4aC13ZWI/_next/static/chunks/400-e9aa5397ef7c35d9.js>。
 
 旧社区声明 `app/sendLoginPhoneCode`、`app/phoneLogin` 和社区 QR 授权，证据 <https://xianhua.sanguosha.cn/_nuxt/login.0bde981d.js>。插件只接社区扫码，没有接手机验证码/密码登录。默认 APP 扫码已由真实用户完成并取得通过本人资料验证的社区会话；这不证明官号游戏授权或游戏角色渠道归属。官号游戏登录仍未接通，身份登记明确为未认证，不猜游戏密码登录接口。
 
+同日只读复核移动版官方公开资料：[隐私政策](https://www.sanguosha.cn/sgs_agreement/index.html)介绍了产品自身的手机号登录、第三方账号辅助登录及跨端扫码。本次查阅未找到供独立插件登记的官号游戏授权流程、服务端票据校验、渠道角色映射和个人游戏数据权限协议。官网描述支持这些登录方式，不等于已提供可供本插件接入的游戏授权 API；现有社区会话也不能据此标记官号游戏登录成功。
+
 ### 华为渠道
 
-移动版官网 <https://www.sanguosha.cn/sgs_agreement/SDK_info.html> 明确列出“华为 Game Service SDK”，证明官方产品使用华为游戏服务。没有在本次查看的官方网页和前端发现向第三方机器人开放的三国杀移动版华为授权、角色映射或个人数据协议。
+移动版官网[第三方合作伙伴及共享信息说明](https://www.sanguosha.cn/sgs_agreement/SDK_info.html)明确列出“华为 Game Service SDK”，证明官方产品使用华为游戏服务。华为[游戏服务介绍](https://developer.huawei.com/consumer/cn/hms/huawei-game)列有游戏登录功能。本次查看的官方公开资料中，仍未找到供独立插件接入的三国杀移动版华为游戏授权、渠道角色映射或完整个人数据协议。
 
-华为官方 Account Kit 文档 <https://developer.huawei.com/consumer/cn/doc/quickapp-guides/quickapp-access-account-kit-0000001079648144> 指出 OpenID 与应用相关，同一账号在不同应用得到不同 OpenID；<https://developer.huawei.com/consumer/cn/doc/doccenter-references/api/account-api-obtain-user-token> 的授权码交换需要本应用的 client_id/client_secret。因此给本插件接入独立华为 OAuth 不能自动读取三国杀移动版渠道角色资产，也不能使用伪造或借用游戏客户端 ID。
+须区分两类标识：华为 [Account Kit 接入文档](https://developer.huawei.com/consumer/cn/doc/quickapp-guides/quickapp-access-account-kit-0000001079648144)中的 OpenID 与应用相关，同一账号在不同应用得到不同 OpenID；华为[快游戏账号 FAQ](https://developer.huawei.com/consumer/es/doc/quickApp-Guides/quickgame-faq-account-0000002453354825)则说明游戏登录使用 Game Service 返回的 playerId，与 Account Kit 的 OpenID 是不同概念。不能把“OpenID 与应用相关”扩展成所有 Game Service 玩家标识均采用相同规则，也不能把任一华为标识直接当成移动版的渠道、区服或角色 ID。快游戏文档在这里仅用于解释标识差别，不用于推定本移动版采用的具体协议版本。
 
-华为支持状态同为 unsupported，官方操作入口为华为应用市场/游戏中心；本插件将 `official` 与 `huawei` 的身份键分开，身份登记不写 `authenticated:true`。未查到是本次审计范围的结果，不宣称这些接口永久不存在。
+华为[用户级凭证交换文档](https://developer.huawei.com/consumer/cn/doc/doccenter-references/api/account-api-obtain-user-token)要求使用 AGC 为应用分配的 `client_id/client_secret`，且 `client_id` 必须与取得授权码时的应用一致。华为 [Android 游戏登录接入示例](https://developer.huawei.com/consumer/en/codelab/HMSGameKit/index.html?cardName=HMSGameKit&lang=en)要求创建自己的游戏应用、配置签名证书指纹、开启 Account Kit/Game Service，并通过 SDK 登录和获取玩家信息。这说明存在官方接入能力，但不证明本插件拥有三国杀移动版对应的应用权限或游卡服务端映射。为本插件登记独立华为 OAuth，只能按该应用获准的权限授权，不能自动换成移动版游戏会话或读取渠道角色资产。本次未使用游戏官方应用身份，未尝试绕过认证。
+
+华为支持状态同为 unsupported，官方操作入口为华为应用市场/游戏中心；本插件将 `official` 与 `huawei` 的身份键分开，身份登记不写 `authenticated:true`。上述“未找到”仅是本次官方公开资料复核的结果，不宣称接口永久不存在。
+
+### 接入游戏渠道仍需的材料
+
+以下是继续开发和验证所需的工程材料，不代表官方已承诺提供这些接口：
+
+1. 游卡确认独立插件可接入的范围，并提供适用的客户端登记方式及正式授权协议。具体可以是官方支持的扫码、授权码或其他授权方式，不能由插件猜测。
+2. 官号与华为分别提供可校验的授权票据、签发方与目标应用说明，以及移动版渠道、区服、角色归属映射协议；华为侧还需确认本插件适用的应用资质、配置和获准权限。独立应用的华为登录成功不能替代游卡游戏侧校验。
+3. 本人资料、拥有武将、皮肤、资产、战绩等接口的权限范围、字段定义、分页与完整性规则，以及凭证有效期、刷新和撤销规则。
+
+这些材料到位后才能判断并实施相应路线。当前实际缺口是游戏授权协议和服务端角色/数据映射未确认，并非只缺一个登录按钮或用户密码；本插件不会索取密码补齐该缺口。
 
 ## 当前可交付范围与真正缺口
 
