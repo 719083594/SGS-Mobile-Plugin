@@ -153,4 +153,11 @@ test('failed or hanging context close suppresses output and permanently blocks m
   for(const options of [{closeFailure:true},{closeDelay:new Promise(()=>{})}]){
     const f=fixture(t),b=fakeBrowser(options),render=renderer(f,b);
     await assert.rejects(render({html:card}),error=>error.code==='CLEANUP_PENDING'&&!error.message.includes('synthetic-secret'));await assert.rejects(render({html:card}),error=>error.code==='CLEANUP_PENDING');
-    assert.equal(b.closed,1);assert.equal(b.calls.filter(ca
+    assert.equal(b.closed,1);assert.equal(b.calls.filter(call=>call[0]==='context').length,1);
+  }
+});
+
+test('upstream render errors never echo private HTML, paths or credentials',async t=>{
+  const f=fixture(t),b=fakeBrowser({setContentError:Error('COOKIE=synthetic-secret /private/account.json')});
+  await assert.rejects(renderer(f,b)({html:card}),error=>error.code==='RENDER_FAILED'&&!/synthetic|private|COOKIE/.test(error.message));assert.equal(b.closed,1);
+});
