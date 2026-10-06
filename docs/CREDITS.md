@@ -32,3 +32,5 @@
 - [TRSS-Yunzai](https://github.com/TimeRainStarSky/Yunzai)：Bot 命令适配目标；核心查询也可独立使用。橙汁的 `orangejuice.plugin.json` 是实例配置声明，未向插件复制橙汁实现代码。
 
 游戏、社区的内容、名称、图片和标识属于对应权利人，社区投稿属于其作者。转载请遵守原站条款与作者要求；插件保留原文链接。公开来源和登录协议可能变化，接口失败时明确返回限制，不伪造个人数据或认证成功。
+
+图片界面的官方道具、武将图和静态装饰来自 `imagexh.sanguosha.com` 与移动版官网，逐项原地址、哈希、大小及原创替代图类别保存在 [素材清单](ASSETS.md) 与 `resources/ui/assets/manifest.json`。近期战绩中官方返回的武将头像仅从 `sjpubicres.sanguosha.cn/release/character_heads/` 固定目录匿名只读取得并保留在本次内存，不传社区凭据。帮助、资料卡排版、内存图片处理及五张明确标记的原创 SVG 属于本项目；官方图片权利仍归游卡及各原权利人，未宣称获得开放素材许可。
