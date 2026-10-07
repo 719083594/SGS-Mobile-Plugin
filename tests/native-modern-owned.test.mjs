@@ -9,9 +9,11 @@ import {createNativeCardRenderer} from '../lib/native-card-renderer.mjs';
 const jpeg=fs.readFileSync(new URL('../resources/ui/assets/general-5.jpg',import.meta.url));
 const dataImage='data:image/jpeg;base64,'+jpeg.toString('base64');
 const countries=['全部','魏国','蜀国','吴国','群雄','神将'];
-const row=(id,extra={})=>({id,name:'合成拥有'+id,isHave:true,url:'https://sjpubicres.sanguosha.cn/release/character_skins/skins/synthetic_'+id+'.jpg',...extra});
+const row=(id,extra={})=>({id,name:'合成拥有'+id,isHave:true,url:'https://sjpubicres.sanguosha.cn/release/characters/synthetic_'+id+'.png',...extra});
 function modern(kind='ownedGenerals',{page=1,total=29,countryType=0,rows,...extra}={}){
-  const items=rows??Array.from({length:Math.min(12,Math.max(0,total-(page-1)*12))},(_,i)=>row((page-1)*12+i+1));
+  const items=rows??Array.from({length:Math.min(12,Math.max(0,total-(page-1)*12))},(_,i)=>{
+    const id=(page-1)*12+i+1;return row(id,kind==='ownedSkins'?{url:'https://sjpubicres.sanguosha.cn/release/character_skins/skins/synthetic_'+id+'.jpg'}:{});
+  });
   const pages=Math.max(1,Math.ceil(total/12));
   return {kind,protocol:'pc-scan-v7',coverage:'official-own-paginated',sourceUrl:'https://api-xh.sanguosha.cn/user/gameGeneral/total',
     data:{items,returnedCount:items.length,total,filteredTotal:total,ownTotal:900,catalogTotal:2000,invalidCount:0,duplicateCount:0,
@@ -35,11 +37,29 @@ test('modern owned cards keep official totals, filtered counts and page counts s
   }
 });
 
-test('modern generals use exact trusted name only, never private IDs, response image URLs or gallery joins',()=>{
-  const calls=[],result=modern('ownedGenerals',{total:2,rows:[row(171,{name:'合成界武将'}),row(29,{name:'合成势武将'})]});
-  const cards=buildNativePersonalCards(result,{assetResolver:{imageForGeneral:key=>{calls.push(key);return dataImage;},imageForSkin:()=>assert.fail('No public skin ID join'),imageForOfficialStatic:()=>assert.fail('No general static URL join')}});
-  assert.deepEqual(calls,['合成界武将','合成势武将']);assert.equal((svgFor(cards).match(/<image\b/g)||[]).length,2);
-  assert.doesNotMatch(svgFor(cards),/synthetic_171|synthetic_29/);
+test('modern generals prefer exact prepared official artwork and fall back only to their unique local names',()=>{
+  const names=[],urls=[],result=modern('ownedGenerals',{total:2,rows:[row(171,{name:'合成界武将'}),row(29,{name:'合成势武将'})]});
+  const cards=buildNativePersonalCards(result,{assetResolver:{
+    imageForGeneral:key=>{names.push(key);return dataImage;},imageForSkin:()=>assert.fail('No public skin ID join'),
+    imageForOfficialStatic:key=>{urls.push(key);return key===result.data.items[0].url?dataImage:null;}
+  }});
+  assert.deepEqual(urls,result.data.items.map(item=>item.url));assert.deepEqual(names,['合成势武将']);
+  assert.equal((svgFor(cards).match(/<image\b/g)||[]).length,2);
+  assert.doesNotMatch(svgFor(cards),/href="(?:https?:|file:)|synthetic_171|synthetic_29/);
+});
+
+test('modern general fallback rejects unsafe prepared artwork, never joins internal IDs or guesses unresolved names',()=>{
+  for(const unsafe of ['https://evil.invalid/a.png','file:///private/a.png','data:image/svg+xml;base64,PHN2Zy8+','data:image/png;base64,eA==',null]){
+    const names=[],urls=[],result=modern('ownedGenerals',{total:2,rows:[row(171,{name:'合成未收录武将'}),row(29,{name:'合成本地武将',url:null})]});
+    const cards=buildNativePersonalCards(result,{assetResolver:{
+      imageForOfficialStatic:key=>{urls.push(key);return unsafe;},
+      imageForGeneral:key=>{names.push(key);return key==='合成本地武将'?dataImage:null;},
+      imageForSkin:()=>assert.fail('No public gallery ID join')
+    }});
+    assert.deepEqual(urls,[result.data.items[0].url]);assert.deepEqual(names,['合成未收录武将','合成本地武将']);
+    assert.equal((svgFor(cards).match(/<image\b/g)||[]).length,1);
+    assert.doesNotMatch(svgFor(cards),/href="(?:https?:|file:)|<image[^>]+svg\+xml/);
+  }
 });
 
 test('modern skin cards preserve skin identity, own pagination and placeholders without borrowing general portraits',()=>{

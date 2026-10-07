@@ -33,7 +33,7 @@
 
 ## 素材与图片
 
-官方道具、武将和静态装饰来自`imagexh.sanguosha.com`与移动版官网，逐项原地址、哈希和大小保存在 [ASSETS.md](ASSETS.md) 与`resources/ui/assets/manifest.json`。近期头像只从`sjpubicres.sanguosha.cn/release/character_heads/`固定目录匿名读取；本人皮肤原画只从`sjpubicres.sanguosha.cn/release/character_skins/skins/`固定目录匿名读取，均不发送会话凭据，只留本次内存。品质小标不冒充皮肤原画；本人内部ID不猜关联公开目录。
+官方道具、武将和静态装饰来自`imagexh.sanguosha.com`与移动版官网，逐项原地址、哈希和大小保存在 [ASSETS.md](ASSETS.md) 与`resources/ui/assets/manifest.json`。近期头像只从`sjpubicres.sanguosha.cn/release/character_heads/`固定目录匿名读取；本人拥有武将使用响应 `generals[].url` 的同域 `/release/characters/*.png` 图片，字段用法参考 [官方当前战绩页面](https://note.sanguosha.cn/record/assets/index-CXtl96WG.js) 并经授权只读核验。本人皮肤原画只从同域 `/release/character_skins/skins/` 固定目录匿名读取，均不发送会话凭据，只留本次内存。品质小标不冒充头像或皮肤原画；本人内部ID不猜关联公开目录。
 
 公开绘影堂原图来自其声明的`sjwx-oss.sanguosha.cn/skins/image/`，本插件预先制作缩略图，`resources/skin-gallery/manifest.json`保存每个公开条目ID、名称、原地址与缩略图哈希。图鉴范围见 [CATALOG.md](CATALOG.md)。帮助排版、资产/头像/皮肤网格、分页、数量对照和内存绘图由本项目原创实现；五张原创SVG明确记录类别。
 
