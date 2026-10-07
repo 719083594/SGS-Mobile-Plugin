@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {ASSET_ITEMS,PERSONAL_IMAGE_FIELDS,createAssetResolver} from '../lib/ui-assets.mjs';
+import {ASSET_ITEMS,PERSONAL_IMAGE_FIELDS,createAssetResolver,generalNameKey} from '../lib/ui-assets.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const iconUrl='https://imagexh.sanguosha.com/sgxh-h5/dj1.png';
@@ -45,6 +45,27 @@ test('同名不同图的目录条目不会任意挑选一种武将',t=>{
   const{root,directory,entries,save}=fixture(t);fs.writeFileSync(path.join(directory,'general-2.png'),png);
   entries.push({...entries[1],id:2,file:'general-2.png',url:'https://www.sanguosha.cn/storage/uploads/images/pic_index/2.png'});save();
   assert.equal(createAssetResolver(root).imageForGeneral('刘备'),null);
+});
+
+test('五个已打包界势武将仅省略中点时与官网标准名解析到同一图片',()=>{
+  const resolver=createAssetResolver(root);
+  for(const canonical of ['界·徐盛','势·邓艾','势·周瑜','势·魏延','势·辛宪英']){
+    const expected=resolver.imageForGeneral(canonical);assert(expected,canonical);
+    assert.equal(resolver.imageForGeneral(canonical.replaceAll('·','')),expected);
+  }
+  assert.equal(generalNameKey('界·徐盛'),'界徐盛');assert.equal(generalNameKey('势·周瑜'),'势周瑜');assert.equal(generalNameKey('界・徐盛'),'界・徐盛');
+});
+
+test('中点别名保留完整前缀、优先精确名，并拒绝不同文件或哈希的歧义',t=>{
+  const f=fixture(t);f.entries[1].name='界·徐盛';f.save();
+  const initial=createAssetResolver(f.root),expected=initial.imageForGeneral('界·徐盛');assert(expected);assert.equal(initial.imageForGeneral('界徐盛'),expected);
+  for(const name of ['徐盛','势徐盛','神徐盛','界 徐盛','界・徐盛','界-徐盛','界。徐盛'])assert.equal(initial.imageForGeneral(name),null);
+  fs.writeFileSync(path.join(f.directory,'general-2.png'),png);
+  f.entries.push({...f.entries[1],id:2,name:'界徐·盛',file:'general-2.png',url:'https://www.sanguosha.cn/storage/uploads/images/pic_index/2.png'});f.save();
+  const collision=createAssetResolver(f.root);assert.equal(collision.imageForGeneral('界徐盛'),null);assert.equal(collision.imageForGeneral('界·徐盛'),expected);
+  f.entries[2].name='界徐盛';f.save();const exact=createAssetResolver(f.root);assert.notEqual(exact.imageForGeneral('界徐盛'),expected);assert.equal(exact.imageForGeneral('界·徐盛'),expected);
+  f.entries[2]={...f.entries[1],name:'界徐·盛'};f.save();assert.equal(createAssetResolver(f.root).imageForGeneral('界徐盛'),expected);
+  f.entries[2].sha256='0'.repeat(64);f.save();assert.equal(createAssetResolver(f.root).imageForGeneral('界徐盛'),null);
 });
 
 test('hash变化、目录逃逸、非图片及不安全manifest来源都返回空而不回退网络',t=>{

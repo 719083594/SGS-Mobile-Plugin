@@ -25,8 +25,8 @@ function fixture(t){
   const file=path.join(directory,'general-1.png'),manifest=path.join(directory,'manifest.json');
   const entry={kind:'official-artwork',category:'general',name:'刘备',id:1,url:'https://www.sanguosha.cn/storage/uploads/images/pic_index/1.png',file:path.basename(file),bytes:png.length,sha256:digest(png)};
   fs.writeFileSync(file,png);
-  const save=()=>fs.writeFileSync(manifest,JSON.stringify({schema:1,entries:[entry]}));save();
-  return {root,directory,file,manifest,entry,save};
+  const entries=[entry],save=()=>fs.writeFileSync(manifest,JSON.stringify({schema:1,entries}));save();
+  return {root,directory,file,manifest,entry,entries,save};
 }
 
 test('public exact name resolves to canonical PNG data without a network or account dependency',t=>{
@@ -42,6 +42,25 @@ test('public exact name resolves to canonical PNG data without a network or acco
 test('unknown names, game IDs, URLs and private paths do not become public catalog names',t=>{
   const f=fixture(t),resolver=createNativePortraitResolver({root:f.root});
   for(const name of ['曹操','1',1,null,{},'../private.png','C:\\private.png','https://sjpubicres.sanguosha.cn/release/character_heads/private.png','file:///etc/passwd','data:image/png;base64,AA==','刘备\0','A'.repeat(101)])assert.equal(resolver.imageForGeneral(name),null);
+});
+
+test('five bundled variant aliases and their canonical public names produce identical RAM portraits',()=>{
+  const root=fileURLToPath(new URL('../',import.meta.url)),resolver=createNativePortraitResolver({root});
+  for(const canonical of ['界·徐盛','势·邓艾','势·周瑜','势·魏延','势·辛宪英']){
+    const expected=resolver.imageForGeneral(canonical);assert(expected,canonical);
+    assert.equal(resolver.imageForGeneral(canonical.replaceAll('·','')),expected);
+  }
+});
+
+test('native alias revalidation keeps variant prefixes and exact-name priority, and rejects changed manifest ambiguity',t=>{
+  const f=fixture(t);f.entry.name='界·徐盛';f.save();const resolver=createNativePortraitResolver({root:f.root}),expected=resolver.imageForGeneral('界·徐盛');assert(expected);assert.equal(resolver.imageForGeneral('界徐盛'),expected);
+  for(const name of ['徐盛','势徐盛','神徐盛','界 徐盛','界・徐盛','界-徐盛','界。徐盛'])assert.equal(resolver.imageForGeneral(name),null);
+  fs.writeFileSync(path.join(f.directory,'general-2.png'),png);
+  f.entries.push({...f.entry,id:2,name:'界徐·盛',file:'general-2.png',url:'https://www.sanguosha.cn/storage/uploads/images/pic_index/2.png'});f.save();
+  assert.equal(resolver.imageForGeneral('界徐盛'),null);assert.equal(resolver.imageForGeneral('界·徐盛'),expected);
+  f.entries[1].name='界徐盛';f.save();const exact=createNativePortraitResolver({root:f.root});assert.equal(exact.imageForGeneral('界徐盛'),expected);assert.equal(exact.imageForGeneral('界·徐盛'),expected);
+  f.entries[1]={...f.entry,name:'界徐·盛'};f.save();assert.equal(createNativePortraitResolver({root:f.root}).imageForGeneral('界徐盛'),expected);
+  f.entries[1].sha256='0'.repeat(64);f.save();assert.equal(resolver.imageForGeneral('界徐盛'),null);
 });
 
 test('injected resolver cannot escape the direct fixed directory or bypass canonical URL checks',t=>{
