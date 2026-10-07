@@ -28,7 +28,7 @@
 
 - [移动版第三方 SDK 清单](https://www.sanguosha.cn/sgs_agreement/SDK_info.html) 与 [华为 Account Kit](https://developer.huawei.com/consumer/cn/sdk/account-kit)：仅作为华为渠道能力研究依据，当前没有连接华为游戏账户 API。华为 OpenID 与应用有关，独立授权不能自动读取三国杀移动版角色；依据 [华为接入说明](https://developer.huawei.com/consumer/cn/doc/quickapp-guides/quickapp-access-account-kit-0000001079648144) 与 [令牌交换接口说明](https://developer.huawei.com/consumer/cn/doc/doccenter-references/api/account-api-obtain-user-token)。
 - [node-qrcode / soldair](https://github.com/soldair/node-qrcode)，MIT：在本机编码官方二维码内容，不将扫码凭据发送到第三方绘码网站。其他随包依赖的许可证保留在各自 npm 包内。
-- [sharp](https://sharp.pixelplumbing.com/)，Apache-2.0，以及其 [libvips](https://www.libvips.org/) 图像后端，LGPL-2.1-or-later：固定版本本地 SVG 转 JPEG，用于 APP 协议战绩内存绘图。平台预编译包及各组件许可证保留在 npm 依赖中，不调用在线绘图 API。
+- [AI-Plugin](https://github.com/719083594/AI-Plugin) 的共享原生渲染服务，以及 [sharp](https://sharp.pixelplumbing.com/)，Apache-2.0，和 [libvips](https://www.libvips.org/) 图像后端，LGPL-2.1-or-later：固定版本本地 SVG 转 JPEG，用于资产、战绩、胜率及其他标准动态卡片内存绘图。平台预编译包及各组件许可证保留在 npm 依赖中，不调用在线绘图 API。
 - [Node.js](https://nodejs.org/)，MIT 及其第三方组件许可证：使用原生 ESM、Fetch、加密、文件与测试接口。
 - [TRSS-Yunzai](https://github.com/TimeRainStarSky/Yunzai)：Bot 命令适配目标；核心查询也可独立使用。橙汁的 `orangejuice.plugin.json` 是实例配置声明，未向插件复制橙汁实现代码。
 

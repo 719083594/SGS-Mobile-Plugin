@@ -67,6 +67,50 @@ test('empty, missing and invalid values do not invent zero quantities or unsuppo
   assert.match(allSvg(cards),/本次暂无可展示的资料/);assert.doesNotMatch(allSvg(cards),/大师|排位赛最高段位|NaN|Infinity/);
 });
 
+test('recent-only records calculate a distinct first-page win rate from at most 20 results and exclude unknown codes',()=>{
+  const data={g20:[0,'0',1,'1',2,.5,null,true,'0.0','unknown',...Array(10).fill(0),1],recent:recent(25)},original=structuredClone(data);
+  const cards=buildNativeRecordCards(result(data),{model:2}),first=textContents(cards[0].svg),second=textContents(cards[1].svg);
+  assert.equal(cards.length,3);assert.ok(first.includes('胜率概览'));assert.ok(first.includes('近20场胜率（身份场）'));
+  assert.ok(first.includes('85.71%'));assert.ok(first.includes('12 胜 / 2 负；未知 6 场，已排除；本次取 20 条（仅前20条）'));
+  assert.ok(first.includes('近20场单独统计，不能代替完整战绩胜率。'));assert.equal(second.includes('胜率概览'),false);
+  assert.equal(first.filter(value=>value==='近20场胜率（身份场）').length,1);
+  assert.equal(textContents(allSvg(cards)).filter(value=>value.startsWith('合成武将-')).length,25);assert.deepEqual(data,original);
+  assert.doesNotMatch(allSvg(cards),/总胜率|官方本人统计|生涯/);
+});
+
+test('zero observed matches and all-unknown samples never render a fabricated zero-percent win rate',()=>{
+  for(const [sample,detail] of [[[],'0 胜 / 0 负；未知 0 场，已排除；本次取 0 条'],[[2,null,true,'1.0'],'0 胜 / 0 负；未知 4 场，已排除；本次取 4 条']]){
+    const values=textContents(allSvg(buildNativeRecordCards(result({g20:sample}))));
+    assert.ok(values.includes('近20场胜率（全部模式）'));assert.ok(values.includes('暂无可统计结果'));assert.ok(values.includes(detail));assert.equal(values.includes('0%'),false);
+  }
+  for(const [sample,expected] of [[[0,0],'100%'],[[1,1],'0%']])assert.ok(textContents(allSvg(buildNativeRecordCards(result({g20:sample})))).includes(expected));
+});
+
+test('appended overview accepts only known labels and bounded display text, deduplicates recent rate and keeps source statistics separate',()=>{
+  const data={...statistics,recent:recent(25)},input={...result(data),winRateSummary:{kind:'winRate',protocol:'app-qr-v1',data:{scope:'synthetic-private-scope',token:'synthetic-secret',entries:[
+    {label:'总胜率',value:'60%',detail:'6 胜 / 10 场',token:'synthetic-token'},
+    {label:'排位胜率',value:'暂无记录',detail:'0 胜 / 0 场'},
+    {label:'斗地主胜率',value:'50%',detail:'2 胜 / 4 场'},
+    {label:'近20场胜率（全部模式）',value:'99%',detail:'synthetic-stale-near20'},
+    {label:'总胜率',value:'1%',detail:'synthetic-duplicate'},
+    {label:'未确认雷达胜率',value:'synthetic-unknown',detail:'synthetic-unknown-detail'}
+  ]}}},original=structuredClone(input),cards=buildNativeRecordCards(input),first=textContents(cards[0].svg);
+  for(const value of ['总胜率','60%','6 胜 / 10 场','排位胜率','暂无记录','斗地主胜率','50%','近20场胜率（全部模式）','10 胜 / 10 负；未知 0 场，已排除；本次取 20 条','官方本人统计 · 统计周期未标明','身份场','国战'])assert.ok(first.includes(value),value);
+  assert.equal(first.filter(value=>value==='近20场胜率（全部模式）').length,1);assert.equal(first.filter(value=>value==='总胜率').length,1);
+  assert.doesNotMatch(allSvg(cards),/synthetic-|99%|未确认雷达胜率|生涯/);assert.deepEqual(input,original);
+  assert.doesNotMatch(cards[1].svg,/胜率概览|总胜率|统计周期未标明/);
+  const long={...result({}),winRateSummary:{kind:'winRate',protocol:'app-qr-v1',data:{entries:[{label:'总胜率',value:'<'.repeat(1000),detail:'合'.repeat(1000)}]}}};
+  const bounded=buildNativeRecordCards(long),values=textContents(allSvg(bounded));assert.ok(values.includes('<'.repeat(40)));assert.ok(values.includes('合'.repeat(120)));assert.doesNotMatch(allSvg(bounded),/<{2}/);
+  for(const card of bounded){assert.ok(card.width*card.height<=12000000);assert.ok(Buffer.byteLength(card.svg)<=4*1024*1024);}
+});
+
+test('unverified summary protocol or unknown overview shapes are ignored while local recent computation survives',()=>{
+  for(const summary of [null,{}, {kind:'winRate',protocol:'pc-scan-v7',data:{entries:[{label:'总胜率',value:'77%'}]}},{kind:'other',protocol:'app-qr-v1',data:{entries:[{label:'总胜率',value:'77%'}]}},{kind:'winRate',protocol:'app-qr-v1',data:{entries:[{label:'总胜率',value:{secret:'synthetic-secret'}},{label:'总胜率\u0000',value:'77%'}]}}]){
+    const values=textContents(allSvg(buildNativeRecordCards({...result({g20:[0,1]}),winRateSummary:summary})));
+    assert.ok(values.includes('近20场胜率（全部模式）'));assert.ok(values.includes('50%'));assert.equal(values.includes('总胜率'),false);assert.equal(values.includes('77%'),false);
+  }
+});
+
 test('untrusted XML is escaped, controls are removed, general names wrap by character and private fields do not enter SVG',()=>{
   const name='<script>&"\'合成</script>',long='长'.repeat(60),data={recent:[{name},{name:long}],token:'synthetic-secret',cookie:'synthetic-cookie',phone:'synthetic-phone'};
   const svg=allSvg(buildNativeRecordCards(result(data),{prefix:'<svg>&',command:'战绩"\'',dataAlreadyRedacted:true}));
