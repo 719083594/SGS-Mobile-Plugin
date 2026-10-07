@@ -13,7 +13,7 @@ const root=fileURLToPath(new URL('.',import.meta.url));let apps={};let enabled=f
 if(enabled){
   const Base=globalThis.plugin||(await import('../../lib/plugins/plugin.js')).default;const engine=new SanguoshaMobile(root);
   const hostRenderer=resolveHostPuppeteer((await import('../../lib/renderer/loader.js')).default);
-  const renderCard=createQueuedCardRenderer(createCardRenderer({botRoot:path.resolve(root,'../..'),getBrowser:()=>hostRenderer.browser,ensureBrowser:()=>hostRenderer.browserInit(),assetRoots:[path.join(root,'resources/ui')],bootstrapFile:path.join(root,'resources/ui/shell.html'),onMetrics:metrics=>globalThis.logger?.info?.('[Sanguosha] 图片耗时：'+JSON.stringify(metrics))}),{botRoot:path.resolve(root,'../..')});
+  const renderCard=createQueuedCardRenderer(createCardRenderer({botRoot:path.resolve(root,'../..'),getBrowser:()=>hostRenderer.browser,ensureBrowser:()=>hostRenderer.browserInit(),assetRoots:[path.join(root,'resources/ui')],bootstrapFile:path.join(root,'resources/ui/shell.html'),deliverBeforeCleanup:true,onMetrics:metrics=>globalThis.logger?.info?.('[Sanguosha] 图片耗时：'+JSON.stringify(metrics))}),{botRoot:path.resolve(root,'../..')});
   const readHelp=createBundledHelpReader({root,defaultPrefix:'#三国'});
   const renderCachedHelp=createPublicHelpCache(renderCard);
   const renderHelp=card=>{const prefix=engine.config.read().prefix;if(prefix==='#三国'){const bytes=readHelp({prefix,private:card.private});if(!bytes)throw new CardRenderError('HELP_IMAGE_UNAVAILABLE');return bytes}return renderCachedHelp(card)};
