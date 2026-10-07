@@ -31,11 +31,11 @@ function assertNoCredentialReply(reply){
   assert.equal(reply.image,undefined);
 }
 
-test('ordinary authorization command names and hidden aliases parse without falling into a hero lookup',()=>{
-  for(const name of ['登录','社区授权','扫码状态','授权状态','取消授权','新版授权','新版扫码状态','取消新版授权'])assert.deepEqual(parseCommand(name),{cmd:name,arg:''});
+test('ordinary authorization command names parse without falling into a hero lookup',()=>{
+  for(const name of ['登录','社区授权','扫码状态','授权状态','取消授权'])assert.deepEqual(parseCommand(name),{cmd:name,arg:''});
   assert.deepEqual(parseCommand('社区授权 微信'),{cmd:'社区授权',arg:'微信'});
   assert.deepEqual(parseCommand('扫码状态 微信'),{cmd:'扫码状态',arg:'微信'});
-  assert.equal(parseCommand('新版授权错误').cmd,'');
+  assert.notEqual(parseCommand('新版授权错误').cmd,'新版授权');
 });
 
 test('starting modern authorization keeps the active old authorization and unrelated identity',async t=>{
@@ -75,7 +75,7 @@ test('failure or expiration of a new QR cannot remove the prior active session',
 });
 
 test('both cancellation names preserve active authorization and cancel the modern pending QR',async t=>{
-  for(const cmd of ['取消授权','取消新版授权']){
+  for(const cmd of ['取消授权']){
     const bot=workspace(t),legacy=challenge('legacy-pending','app-qr-v1');seed(bot,OWNER,{challenge:legacy,modernChallenge:challenge('cancel-me')});
     const reply=await invoke(bot,cmd);
     assertOld(bot);assert.equal(saved(bot).modernChallenge,undefined);assert.deepEqual(saved(bot).challenge,legacy);assertNoCredentialReply(reply);
@@ -113,7 +113,7 @@ test('ordinary and explicit WeChat polling use only the modern pending challenge
 
 test('a leftover APP challenge cannot be polled or mistaken for a new authorization',async t=>{
   const bot=workspace(t),legacy=challenge('never-poll-this','app-qr-v1');seed(bot,OWNER,{challenge:legacy});
-  for(const cmd of ['扫码状态','扫码状态 微信','新版扫码状态']){
+  for(const cmd of ['扫码状态','扫码状态 微信']){
     const reply=await invoke(bot,cmd);
     assert.match(reply.text,/没有待确认|没有待|先.*社区授权/);
     assertOld(bot);assert.deepEqual(saved(bot).challenge,legacy);assert.equal(saved(bot).modernChallenge,undefined);
@@ -126,13 +126,9 @@ test('an APP challenge in the modern slot is rejected before sending any poll',a
   assert.match(reply.text,/协议|新版|无效|不支持|无法/);assertOld(bot);assert.deepEqual(saved(bot),before);
 });
 
-test('hidden modern start and poll aliases remain compatible with the ordinary flow',async t=>{
-  const bot=workspace(t);seed(bot);
-  bot.auth.start=async options=>{assert.deepEqual(options,{protocol:'pc-scan-v7'});return challenge('hidden-alias');};
-  const qr=await invoke(bot,'新版授权');assert.ok(qr.image);assert.match(qr.text,/#sgs扫码状态/);
-  bot.auth.poll=async current=>{assert.equal(current.challengeId,'hidden-alias');return {status:'authorized',session:newSession()};};
-  const reply=await invoke(bot,'新版扫码状态');
-  assert.deepEqual(saved(bot).session,newSession());assert.equal(saved(bot).modernChallenge,undefined);assertNoCredentialReply(reply);
+test('retired version-specific command names do not authorize or mutate the vault',async t=>{
+ const bot=workspace(t);seed(bot);const before=saved(bot);bot.public.heroes=async()=>({items:[]});
+ for(const text of ['新版授权','新版扫码状态','取消新版授权']){const reply=await invoke(bot,text);assert.equal(reply.image,undefined);assert.deepEqual(saved(bot),before);}
 });
 
 test('an old in-flight modern poll cannot replace a newer QR or discard its old session',{timeout:5000},async t=>{
@@ -186,7 +182,7 @@ test('two starts resolving out of order keep the most recently requested QR',{ti
 
 test('private status distinguishes old, new and absent authorization without returning identifiers or credentials',async t=>{
   const bot=workspace(t);seed(bot);
-  const old=await invoke(bot,'授权状态');assert.match(old.text,/旧|APP|app-qr/i);assertNoCredentialReply(old);
+  const old=await invoke(bot,'授权状态');assert.match(old.text,/停用|重新登录/i);assertNoCredentialReply(old);
   bot.saveAuth(OWNER,{session:newSession(),modernChallenge:challenge('visible-only-as-status')});
   const modern=await invoke(bot,'授权状态');assert.match(modern.text,/新|网页|pc-scan/i);assertNoCredentialReply(modern);
   await invoke(bot,'退出授权');const none=await invoke(bot,'授权状态');assert.match(none.text,/无|未|尚/);assertNoCredentialReply(none);
@@ -194,7 +190,7 @@ test('private status distinguishes old, new and absent authorization without ret
 
 test('group authorization actions are rejected before reading the vault or making requests',async t=>{
   const bot=workspace(t);bot.vault.get=()=>assert.fail('group authorization must not read private vault');bot.vault.update=()=>assert.fail('group authorization must not mutate private vault');
-  for(const cmd of ['登录','社区授权','扫码状态','取消授权','新版授权','新版扫码状态','授权状态','取消新版授权','社区授权 微信','扫码状态 微信','退出授权']){
+  for(const cmd of ['登录','社区授权','扫码状态','取消授权','授权状态','社区授权 微信','扫码状态 微信','退出授权']){
     const reply=await invoke(bot,cmd,OWNER,{group_id:'200000001',isGroup:true});assert.match(reply.text,/私聊/);assertNoCredentialReply(reply);
   }
 });
@@ -209,7 +205,7 @@ test('unknown authorization arguments never silently select the old login flow',
 test('disabled personal data blocks starting and polling but allows local cancellation and complete logout',async t=>{
   const bot=workspace(t);seed(bot,OWNER,{challenge:challenge('old-pending','app-qr-v1'),modernChallenge:challenge('new-pending')});
   fs.writeFileSync(bot.config.file,JSON.stringify({...bot.config.read(),personalDataEnabled:false}));
-  for(const cmd of ['登录','社区授权','扫码状态','新版授权','新版扫码状态','授权状态','社区授权 微信','扫码状态 微信'])assert.match((await invoke(bot,cmd)).text,/关闭/);
+  for(const cmd of ['登录','社区授权','扫码状态','授权状态','社区授权 微信','扫码状态 微信'])assert.match((await invoke(bot,cmd)).text,/关闭/);
   await invoke(bot,'取消授权');assertOld(bot);assert.equal(saved(bot).modernChallenge,undefined);
   bot.saveAuth(OWNER,{modernChallenge:challenge('logout-pending')});
   bot.auth.logout=async()=>{throw new CommunityAuthError('NETWORK_ERROR','synthetic remote logout failure');};

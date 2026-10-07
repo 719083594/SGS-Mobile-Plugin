@@ -66,7 +66,7 @@ test('failed current-user verification cannot establish a modern session or disc
   });
 });
 
-test('modern identity proof accepts only official web success codes without changing legacy codes', async () => {
+test('identity proof accepts only current official success codes and never permits an old protocol', async () => {
   for (const profileCode of [200, 20002, 10000, '1000']) {
     const { client } = flow({ userId: 123 }, { profileCode });
     await assert.rejects(client.poll(challenge()), error => error.code === 'API_ERROR');
@@ -74,7 +74,7 @@ test('modern identity proof accepts only official web success codes without chan
   const legacySession = { token: 'synthetic-legacy-token', protocol: 'app-qr-v1', scope: 'sanguosha-community', gameVersion: 'sanguosha-mobile' };
   for (const code of [200, 20002, 10000]) {
     const client = new CommunityAuthClient({ fetchImpl: async () => response({ id: 321 }, { code }) });
-    assert.equal((await client.queryOwn('profile', legacySession)).data.id, 321);
+    await assert.rejects(client.queryOwn('profile', legacySession), error => error.code === 'UNSUPPORTED_PROTOCOL');
   }
 });
 
@@ -139,11 +139,10 @@ test('explicit terminal modern poll states never exchange an accompanying ticket
   assert.equal(pending.calls.length, 1);
 });
 
-test('legacy current-user proof keeps its existing identity and session shape', async () => {
-  const client = new CommunityAuthClient({ fetchImpl: async url => new Response(JSON.stringify({ code: 0, data: url.includes('qrcode') ? { token: 'synthetic-legacy-token' } : { id: 321, nick_name: 'legacy user' } })) });
-  const result = await client.poll({ protocol: 'app-qr-v1', qrPayload: 'synthetic-legacy-qr', expiresAt: Date.now() + 60000 });
-  assert.equal(result.status, 'authorized');
-  assert.deepEqual(result.profile, { id: 321, nick_name: 'legacy user' });
-  assert.equal(Object.hasOwn(result.session, 'communityUserId'), false);
-  assert.equal(Object.hasOwn(result, 'communityUserId'), false);
+test('old current-user proof and APP QR never perform requests or establish authorization', async () => {
+  let requests = 0;
+  const client = new CommunityAuthClient({ fetchImpl: async () => { requests++; return response({ id: 321 }); } });
+  await assert.rejects(client.poll({ protocol: 'app-qr-v1', qrPayload: 'synthetic-legacy-qr', expiresAt: Date.now() + 60000 }), error => error.code === 'UNSUPPORTED_PROTOCOL');
+  await assert.rejects(client.start({ protocol: 'app-qr-v1' }), error => error.code === 'UNSUPPORTED_PROTOCOL');
+  assert.equal(requests, 0);
 });

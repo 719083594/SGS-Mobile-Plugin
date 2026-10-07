@@ -16,11 +16,11 @@ test('图片帮助仅适配器启用，文字回退不请求网络',()=>workspac
  assert.equal((await bot.handle({...e,text:'#sgs帮助 文字',imageReply:true})).card,undefined);
 }));
 
-test('个人图片不绕过授权和群限制，显式文字与导出保持原协议且每次只查一次',()=>workspace(async root=>{
+test('个人图片不绕过授权和群限制，现代查询的文字与导出每次只查一次',()=>workspace(async root=>{
  const bot=new SanguoshaMobile(root);const e={owner:'100000001',privateChat:true,imageReply:true};let calls=0;
- bot.auth.queryOwn=async(kind,session,params)=>{calls++;return {kind,protocol:'app-qr-v1',data:{yb:1234},sourceUrl:'https://hi-gateway.sanguosha.cn/api/game/v2/general/property'}};
+ bot.auth.queryOwn=async(kind,session,params)=>{calls++;return {kind,protocol:'pc-scan-v7',scope:'sanguosha-community',gameVersion:'sanguosha-mobile',authenticated:true,ownAccountOnly:true,data:{yb:1234},sourceUrl:'https://api-xh.sanguosha.cn/user/gameProperty'}};
  assert.equal((await bot.handle({...e,text:'#sgs资产'})).card,undefined);assert.equal(calls,0);
- bot.vault.set(e.owner,{session:{token:'synthetic',protocol:'app-qr-v1'}});
+ bot.vault.set(e.owner,{session:{token:'synthetic',protocol:'pc-scan-v7',communityUserId:'90000001',scope:'sanguosha-community',gameVersion:'sanguosha-mobile'}});
  assert.equal((await bot.handle({...e,group_id:'200000001',text:'#sgs资产'})).card,undefined);assert.equal(calls,0);
  const card=await bot.handle({...e,text:'#sgs资产'});assert.equal(card.card.private,true);assert.equal(card.card.type,'personal');assert.equal(calls,1);
  const plain=await bot.handle({...e,text:'#sgs资产 文字'});assert.equal(plain.card,undefined);assert.match(plain.text,/元宝/);assert.equal(calls,2);

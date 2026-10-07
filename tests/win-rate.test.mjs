@@ -2,121 +2,131 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildWinRateOverview,buildGeneralWinRate,formatWinRate,WinRateError} from '../lib/win-rate.mjs';
 
-const envelope=(kind,data)=>({kind,protocol:'app-qr-v1',data});
-const best=(data)=>envelope('bestGeneral',data);
-const records=(data)=>envelope('records',data);
+const sources={gameInfo:'https://api-xh.sanguosha.cn/user/generalGameInfo',records:'https://api-xh.sanguosha.cn/user/gameCareerUserInfo',recent:'https://api-xh.sanguosha.cn/user/gameRecordList/total',bestGeneral:'https://api-xh.sanguosha.cn/user/gameBestGeneralNew'};
+const wire=[0,4,1,2,3];
+const envelope=(kind,data,model=0)=>({kind,data,protocol:'pc-scan-v7',scope:'sanguosha-community',gameVersion:'sanguosha-mobile',communityAuthenticated:true,sourceUrl:sources[kind],...(kind==='gameInfo'?{}:{query:{model,wireMode:wire[model],...(kind==='recent'?{page:1,pageSize:10}:{})}})});
+const best=(list,model=0)=>envelope('bestGeneral',{list},model);
+const general=(changes={})=>({total:3,win:1,info:{id:100,name:'势·周瑜',country:3,country2:0,url:'https://imagexh.sanguosha.com/synthetic.jpg',isHave:true},...changes});
+const records=(data={},model=0)=>envelope('records',{totalGames:16,winGames:9,rate:'0.5625',rates:[],...data},model);
 const byLabel=(result,label)=>result.data.entries.find(row=>row.label===label);
 const throwsCode=(fn,code)=>assert.throws(fn,error=>error instanceof WinRateError&&error.code===code);
 
-test('官方总场次、胜场计算总览，不受昵称、凭据或雷达能力值影响',()=>{
-  const raw={totalWin:9,totalGame:16,rankWin:'2',rankNum:'3',douDiZhuWin:0,douDiZhuTotal:5,token:'synthetic-secret',nick:'synthetic-private-name',ri:{one:9999}};
-  const original=structuredClone(raw),result=buildWinRateOverview({gameInfo:envelope('gameInfo',raw)});
+test('现代当前模式胜场与场次计算总览，忽略身份与能力等非显示字段且不修改输入',()=>{
+  const input=records({token:'synthetic-token',nick:'synthetic-name',ri:{one:9999}}),original=structuredClone(input);
+  const result=buildWinRateOverview({records:input});
   assert.deepEqual(byLabel(result,'总胜率'),{label:'总胜率',value:'56.25%',detail:'9 胜 / 16 场'});
-  assert.equal(byLabel(result,'排位胜率').value,'66.67%');assert.equal(byLabel(result,'斗地主胜率').value,'0%');
-  assert.doesNotMatch(JSON.stringify(result),/synthetic|9999|nick|token/);assert.deepEqual(raw,original);
+  assert.equal(result.protocol,'pc-scan-v7');assert.equal(result.sourceUrl,sources.records);
+  assert.doesNotMatch(JSON.stringify(result),/synthetic|9999|nick|token/);assert.deepEqual(input,original);
 });
 
-test('零场、缺字段和不一致统计不冒充0%胜率',()=>{
-  const result=buildWinRateOverview({gameInfo:{totalWin:0,totalGame:0,rankWin:4,rankNum:3,douDiZhuTotal:4}});
-  assert.equal(byLabel(result,'总胜率').value,'暂无记录');
-  assert.equal(byLabel(result,'排位胜率').value,'未返回有效统计');assert.equal(byLabel(result,'斗地主胜率').value,'未返回有效统计');
-  for(const value of [-1,NaN,Infinity,1.5,true,'1e3','9007199254740992',''])assert.equal(byLabel(buildWinRateOverview({gameInfo:{totalWin:value,totalGame:10}}),'总胜率').value,'未返回有效统计');
+test('五种公开模式严格核对新版 wire mode，不拼其他模式统计',()=>{
+  for(const [model,label] of [[0,'全部模式'],[1,'排位赛'],[2,'身份场'],[3,'国战'],[4,'斗地主']]){
+    const result=buildWinRateOverview({records:records({},model)},{model});
+    assert.equal(result.data.gameMode,label);assert.equal(result.data.model,model);assert.deepEqual(result.query,{model,wireMode:wire[model]});
+    assert.equal(result.data.entries.length,1);assert.equal(result.data.entries[0].value,'56.25%');
+    if(model)assert.match(formatWinRate(result).text,new RegExp(label+' 导出'));
+  }
+  throwsCode(()=>buildWinRateOverview({records:records({},1)},{model:4}),'SOURCE_CHANGED');
+  const wrong=records({},1);wrong.query.wireMode=1;
+  throwsCode(()=>buildWinRateOverview({records:wrong},{model:1}),'SOURCE_CHANGED');
+  for(const model of [5,-1,1.1,true,'01','1e0',{},[]])throwsCode(()=>buildWinRateOverview({},{model}),'INVALID_MODEL');
 });
 
-test('近20场独立标范围，未知码从胜率分母排除并列明数量',()=>{
-  const result=buildWinRateOverview({records:records({g20:[0,'0',1,'1',2,.5,null,true,'unexpected']})},{model:2});
-  const row=byLabel(result,'近20场胜率（身份场）');assert.equal(row.value,'50%');assert.match(row.detail,/2 胜 \/ 2 负；未知 5 场，已排除/);
-  assert.match(result.data.notice,/不能代替完整战绩/);
-  const clipped=buildWinRateOverview({records:{g20:[...Array(20).fill(0),1]}});assert.match(clipped.data.notice,/仅使用前20条/);assert.match(clipped.data.entries.at(-1).detail,/本次取 20 条/);
-});
-
-test('近20场无有效结果、空列表与缺失列表分别说明',()=>{
-  assert.equal(buildWinRateOverview({records:{g20:[2,null]}}).data.entries.at(-1).value,'无可统计结果');
-  assert.equal(buildWinRateOverview({records:{g20:[]}}).data.entries.at(-1).value,'暂无记录');
-  assert.equal(buildWinRateOverview().data.entries.at(-1).value,'未返回记录');
-  throwsCode(()=>buildWinRateOverview({},{model:5}),'INVALID_MODEL');
-});
-
-test('按完整名称匹配擅长武将四模式，保留势界神而不合并各模式胜场',()=>{
-  const input=best({rank:[{Id:100,name:'势·周瑜',win:1,total:3,token:'synthetic-token',ri:{one:999}}],identity:[{Id:100,name:'势周瑜',win:9,total:10,ii:{zhu:888}}],nationalWar:[{Id:100,name:'势·周瑜',win:0,total:0}],douDiZhu:[{Id:100,name:'势·周瑜',win:1,total:2}]});
-  const original=structuredClone(input),result=buildGeneralWinRate('势 周瑜',{bestGeneral:input});
-  assert.deepEqual(result.data.generals.map(row=>row.label),['排位赛','身份场','国战','斗地主']);
-  assert.deepEqual(result.data.generals.map(row=>row.value),['33.33%','90%','暂无记录','50%']);
-  assert.match(result.data.notice,/不合并推算生涯/);assert.doesNotMatch(JSON.stringify(result),/synthetic|999|888|"ii"|"ri"/);assert.deepEqual(input,original);
-  for(const name of ['周瑜','界周瑜','神周瑜'])throwsCode(()=>buildGeneralWinRate(name,{bestGeneral:input}),'GENERAL_STATS_NOT_RETURNED');
-});
-
-test('同名不同ID或同模式不一致重复数据拒绝选第一项',()=>{
-  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{Id:1,name:'势·周瑜',win:1,total:2},{Id:2,name:'势周瑜',win:1,total:2}]}}),'AMBIGUOUS_GENERAL');
-  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{Id:1,name:'势周瑜',win:1,total:2},{Id:1,name:'势·周瑜',win:1,total:3}]}}),'AMBIGUOUS_GENERAL');
-  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{Id:1,name:'势周瑜',win:1,total:2}],identity:[{Id:2,name:'势·周瑜',win:1,total:2}]}}),'AMBIGUOUS_GENERAL');
-  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{Id:1,name:'势周瑜',win:1,total:2},{Id:2,name:'势·周瑜',win:3,total:2}]}}),'AMBIGUOUS_GENERAL');
-  throwsCode(()=>buildGeneralWinRate('势周瑜',{records:{recent:[{general:1,name:'势周瑜',win_num:1,num:2,win_rate:50},{general:2,name:'势·周瑜',win_num:3,num:2,win_rate:50}]}}),'AMBIGUOUS_GENERAL');
-});
-
-test('相同模式相同统计可去重，不改变输入',()=>{
-  const row={Id:1,name:'势·周瑜',win:1,total:2};const result=buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[row,{...row}]}});
-  assert.equal(result.data.generals.length,1);
-});
-
-test('优先擅长列表，近期使用统计仅在擅长列表未命中时回退',()=>{
-  const recent=records({recent:[{general:100,name:'势·周瑜',win_num:3,num:4,win_rate:75,general_score:10000,phone:'synthetic-phone'}]});
-  const result=buildGeneralWinRate('势周瑜',{records:recent});assert.equal(result.data.generals[0].value,'75%');
-  assert.equal(result.data.scope,'官方近期使用武将统计（统计周期及模式未标明）');assert.match(result.data.notice,/不能视作近20局、指定模式或完整生涯/);
-  assert.doesNotMatch(JSON.stringify(result),/10000|synthetic|phone|general_score/);
-  const chosen=buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{Id:100,name:'势周瑜',win:1,total:4}]},records:recent});assert.equal(chosen.data.generals[0].value,'25%');
-});
-
-test('指定模式仅展示该模式，不混入总胜率或其他模式；身份国战不猜缺失场次',()=>{
-  const gameInfo={totalWin:5,totalGame:10,rankWin:2,rankNum:3,douDiZhuWin:1,douDiZhuTotal:4,identity:80,identityWin:70,null:1};
-  for(const [model,label,expected] of [[1,'排位胜率','66.67%'],[2,'身份场胜率','未返回有效统计'],[3,'国战胜率','未返回有效统计'],[4,'斗地主胜率','25%']]){
-    const result=buildWinRateOverview({gameInfo,records:{g20:[0,1]}},{model});
-    assert.deepEqual(result.data.entries.map(row=>row.label),[label,'近20场胜率（'+result.data.gameMode+'）']);
-    assert.equal(result.data.entries[0].value,expected);assert.match(result.data.scope,new RegExp(result.data.gameMode));
-    assert.equal(result.data.model,model);
+test('旧授权、原始未证明对象、错误source与缺少scope不被现代数据接受',()=>{
+  throwsCode(()=>buildWinRateOverview({records:{protocol:'app-qr-v1',data:{g20:[0]}}}),'UNSUPPORTED_PROTOCOL');
+  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:{protocol:'app-qr-v1',data:{rank:[]}}}),'UNSUPPORTED_PROTOCOL');
+  throwsCode(()=>buildWinRateOverview({records:{winGames:1,totalGames:2}}),'UNSUPPORTED_PROTOCOL');
+  for(const patch of [{sourceUrl:'https://untrusted.invalid/'},{scope:undefined},{communityAuthenticated:false},{gameVersion:'another-game'},{kind:'summary'},{query:{model:0}}]){
+    throwsCode(()=>buildWinRateOverview({records:{...records(),...patch}}),'SOURCE_CHANGED');
   }
 });
 
-test('指定武将模式缺失时不从其他模式或模式未标明的近期统计回填',()=>{
-  const input={bestGeneral:{rank:[{Id:100,name:'势·周瑜',win:1,total:4}],identity:[{Id:100,name:'势周瑜',win:9,total:10}]},records:{recent:[{general:100,name:'势周瑜',win_num:3,num:4,win_rate:75}]}};
-  for(const [model,value] of [[1,'25%'],[2,'90%']]){
-    const result=buildGeneralWinRate('势周瑜',input,{model});assert.equal(result.data.generals.length,1);assert.equal(result.data.generals[0].value,value);assert.equal(result.data.model,model);
-    assert.match(formatWinRate(result).text,new RegExp(result.data.gameMode+' 导出'));
+test('零场可展示暂无记录；不一致或非法现代场次不被汇总fallback掩盖',()=>{
+  assert.equal(buildWinRateOverview({records:records({winGames:0,totalGames:0})}).data.entries[0].value,'暂无记录');
+  const gameInfo=envelope('gameInfo',{totalWin:1,totalGame:2});
+  for(const value of [-1,NaN,Infinity,1.5,true,'1e3','9007199254740992',''])throwsCode(()=>buildWinRateOverview({records:records({winGames:value}),gameInfo}),'SOURCE_CHANGED');
+  throwsCode(()=>buildWinRateOverview({records:records({winGames:17}),gameInfo}),'SOURCE_CHANGED');
+});
+
+test('现代汇总只在当前战绩端点缺失时降级，用核实字段且标明范围',()=>{
+  const gameInfo=envelope('gameInfo',{totalWin:5,totalGame:10,rankWin:2,rankNum:3,identityWin:1,identity:4,douDiZhuWin:0,douDiZhuTotal:7,nationalWarWin:1,nationalWar:1});
+  for(const [model,value] of [[0,'50%'],[1,'66.67%'],[2,'25%'],[4,'0%']]){
+    const result=buildWinRateOverview({gameInfo},{model});assert.equal(result.data.entries[0].value,value);assert.match(result.data.notice,/官方汇总场次/);assert.equal(result.sourceUrl,sources.gameInfo);
   }
-  for(const model of [3,4])throwsCode(()=>buildGeneralWinRate('势周瑜',input,{model}),'GENERAL_STATS_NOT_RETURNED');
-  throwsCode(()=>buildGeneralWinRate('势周瑜',input,{model:5}),'INVALID_MODEL');
-  const selected=buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{Id:100,name:'势周瑜',win:1,total:4}],identity:[{Id:200,name:'势周瑜',win:9,total:10}]}},{model:1});
-  assert.equal(selected.data.generals[0].id,100);
+  assert.equal(buildWinRateOverview({gameInfo},{model:3}).data.entries[0].value,'未返回有效统计');
+  assert.equal(buildWinRateOverview().data.entries[0].value,'未返回有效统计');
+  assert.equal(buildWinRateOverview({gameInfo,records:records()}).data.entries[0].value,'56.25%');
 });
 
-test('近期统计必须同时通过非负整数、胜场范围及百分比一致性检查',()=>{
-  const row={name:'势·周瑜',general:100,win_num:1,num:3,win_rate:33};
-  for(const win_rate of [33,33.3,33.33,33.333])assert.equal(buildGeneralWinRate('势周瑜',{records:{recent:[{...row,win_rate}]}}).data.generals[0].value,'33.33%');
-  for(const invalid of [{win_num:-1},{num:2.5},{win_num:4},{win_rate:0.3333},{win_rate:32.5},{win_rate:101},{win_rate:null},{win_rate:undefined}])throwsCode(()=>buildGeneralWinRate('势周瑜',{records:{recent:[{...row,...invalid}]}}),'INVALID_STATS');
-  assert.equal(buildGeneralWinRate('势周瑜',{records:{recent:[{...row,win_num:0,num:0,win_rate:0}]}}).data.generals[0].value,'暂无记录');
+test('官方分项rate为0到1的比例，仅核实角色名称可显示且不当作场次',()=>{
+  const input=records({rates:[{name:'主公',rate:'0.5'},{name:'忠臣',rate:0},{name:'反贼',rate:'1.0'},{name:'内奸',rate:'0.3333'},{name:'synthetic-secret',rate:1},{name:'主公',rate:1},{name:'内奸',rate:33}]},2);
+  const result=buildWinRateOverview({records:input},{model:2});
+  assert.deepEqual(result.data.entries.slice(1).map(row=>[row.label,row.value]),[['主公胜率','50%'],['忠臣胜率','0%'],['反贼胜率','100%'],['内奸胜率','33.33%']]);
+  assert.match(result.data.entries[1].detail,/未提供该分项场次/);assert.match(result.data.notice,/分项未显示/);assert.doesNotMatch(JSON.stringify(result),/synthetic/);
+  for(const rates of [{name:'主公',rate:1},Array(21).fill({name:'主公',rate:1})])throwsCode(()=>buildWinRateOverview({records:records({rates})}),'SOURCE_CHANGED');
 });
 
-test('无武将记录明确不等于0，不从收藏、近20局或能力伪造',()=>{
-  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:{favorites:[{name:'势周瑜',win:20,total:20}],ri:{one:1}},records:{g20:[0,0],recent:[{name:'周瑜',win_num:10,num:10,win_rate:100}]}}),'GENERAL_STATS_NOT_RETURNED');
-  try{buildGeneralWinRate('势周瑜',{});}catch(error){assert.match(error.message,/不代表胜率为 0/);}
-  for(const name of ['',null,'将'.repeat(61),'势\u0000周瑜'])throwsCode(()=>buildGeneralWinRate(name,{}),'INVALID_GENERAL_NAME');
+test('近期仅按安全DTO outcomeCode统计本页最多10条，未知排除，忽略result文字',()=>{
+  const rows=[{outcomeCode:0,result:'失败',token:'synthetic-secret'},{outcomeCode:1,result:'胜利'},{outcomeCode:null},{outcomeCode:'0'},{outcomeCode:2}];
+  const recent=envelope('recent',rows,2);recent.query.page=2;
+  const result=buildWinRateOverview({records:records({},2),recent},{model:2}),row=result.data.entries.at(-1);
+  assert.equal(row.value,'50%');assert.match(row.detail,/1 胜 \/ 1 负；未知 3 场，已排除；第 2 页，本次取 5 条/);
+  assert.match(result.data.notice,/最多10条/);assert.doesNotMatch(JSON.stringify(result),/synthetic|近20/);
+  assert.equal(buildWinRateOverview({recent:envelope('recent',[])}).data.entries.at(-1).value,'暂无记录');
+  assert.equal(buildWinRateOverview({recent:envelope('recent',[{outcomeCode:null}])}).data.entries.at(-1).value,'无可统计结果');
 });
 
-test('不一致擅长统计不能被近期统计掩盖，过大列表显式拒绝',()=>{
-  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{name:'势周瑜',win:3,total:2}]},records:{recent:[{name:'势周瑜',win_num:1,num:2,win_rate:50}]}}),'INVALID_STATS');
-  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:{rank:Array(1001).fill({name:'势周瑜',win:1,total:2})}}),'STATS_LIMIT');
+test('近期原始list、超限页长或不一致模式元数据拒绝，不能冒充当前模式样本',()=>{
+  throwsCode(()=>buildWinRateOverview({recent:envelope('recent',{list:[{result:0}]})}),'SOURCE_CHANGED');
+  throwsCode(()=>buildWinRateOverview({recent:envelope('recent',Array(11).fill({outcomeCode:0}))}),'SOURCE_CHANGED');
+  throwsCode(()=>buildWinRateOverview({recent:envelope('recent',[null])}),'SOURCE_CHANGED');
+  throwsCode(()=>buildWinRateOverview({recent:envelope('recent',[],1)},{model:2}),'SOURCE_CHANGED');
+  for(const patch of [{page:0},{page:1001},{pageSize:20}]){
+    const value=envelope('recent',[]);Object.assign(value.query,patch);throwsCode(()=>buildWinRateOverview({recent:value}),'SOURCE_CHANGED');
+  }
 });
 
-test('不接不支持的社区协议，输入wrapper中附加凭据不被选择',()=>{
-  throwsCode(()=>buildWinRateOverview({gameInfo:{protocol:'pc-scan-v7',data:{totalWin:1,totalGame:1}}}),'UNSUPPORTED_PROTOCOL');
-  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:{protocol:'pc-scan-v7',data:{}}}),'UNSUPPORTED_PROTOCOL');
-  const result=buildWinRateOverview({gameInfo:{protocol:'app-qr-v1',token:'synthetic-token',data:{totalWin:1,totalGame:1}}});assert.doesNotMatch(JSON.stringify(result),/synthetic|token/);
+test('新嵌套info精确名称匹配保留势界神前缀，只有当前模式且不读能力或个人字段',()=>{
+  const input=best([general({token:'synthetic-token',ii:{zhu:9999}})],1),original=structuredClone(input);
+  const result=buildGeneralWinRate('势 周瑜',{bestGeneral:input},{model:1});
+  assert.equal(result.data.generals.length,1);assert.equal(result.data.generals[0].value,'33.33%');assert.equal(result.data.generals[0].mode,'rank');assert.equal(result.data.generals[0].label,'排位赛');
+  assert.match(result.data.notice,/仅返回部分擅长武将/);assert.doesNotMatch(JSON.stringify(result),/synthetic|9999|url|isHave|country|"ii"/);assert.deepEqual(input,original);
+  for(const name of ['周瑜','界周瑜','神周瑜'])throwsCode(()=>buildGeneralWinRate(name,{bestGeneral:input},{model:1}),'GENERAL_STATS_NOT_RETURNED');
 });
 
-test('文本与JSON导出仅选显示字段，来源不能注入凭据或外部链接',()=>{
-  const result=buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{Id:10,name:'势·周瑜',win:1,total:2}]}});
-  const text=formatWinRate(result,{prefix:'#移动'}).text;assert.match(text,/#移动势·周瑜胜率 导出/);assert.match(text,/排位赛：50%（1 胜 \/ 2 场）/);
-  result.data.token='synthetic-token';result.token='synthetic-top';result.data.generals[0].secret='synthetic-general';result.sourceUrl='https://untrusted.invalid/?token=synthetic-url';
-  const output=formatWinRate(result,{exportJson:true});assert.equal(output.file.name,'三国移动-win-rate.json');assert.doesNotMatch(output.file.data,/synthetic|secret|token|untrusted/);
-  const parsed=JSON.parse(output.file.data);assert.equal(parsed.sourceUrl,'');assert.equal(parsed.data.generals[0].games,2);
+test('全部模式使用new endpoint当前全部模式统计，不合并旧四数组',()=>{
+  const result=buildGeneralWinRate('势周瑜',{bestGeneral:best([general()])});assert.equal(result.data.generals[0].mode,'all');assert.equal(result.data.generals[0].label,'全部模式');
+  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:envelope('bestGeneral',{rank:[{Id:100,name:'势周瑜',win:1,total:2}]})}),'SOURCE_CHANGED');
+});
+
+test('同名不同ID歧义与同ID冲突拒绝，相同统计可去重',()=>{
+  const a=general(),b=general({info:{...a.info,id:101}});
+  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:best([a,b])}),'AMBIGUOUS_GENERAL');
+  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:best([a,general({total:4})])}),'AMBIGUOUS_GENERAL');
+  assert.equal(buildGeneralWinRate('势周瑜',{bestGeneral:best([a,structuredClone(a)])}).data.generals.length,1);
+  b.win=4;throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:best([a,b])}),'AMBIGUOUS_GENERAL');
+});
+
+test('武将计数严格核验，无记录不等于0；旧recent不能作为回退',()=>{
+  for(const patch of [{win:4},{win:-1},{total:1.1},{win:true},{win:'1e0'}])throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:best([general(patch)])}),'INVALID_STATS');
+  assert.equal(buildGeneralWinRate('势周瑜',{bestGeneral:best([general({win:0,total:0})])}).data.generals[0].value,'暂无记录');
+  const records={recent:[{name:'势周瑜',win_num:1,num:1,win_rate:100}]};
+  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:best([]),records}),'GENERAL_STATS_NOT_RETURNED');
+  try{buildGeneralWinRate('势周瑜',{bestGeneral:best([])})}catch(error){assert.match(error.message,/不代表胜率为 0/)}
+});
+
+test('武将数据结构错误、超大列表、模式不符与无效输入显式拒绝',()=>{
+  for(const list of [[{}],[general({info:{id:0,name:'势周瑜'}})],[general({info:{id:1,name:''}})]])throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:best(list)}),'SOURCE_CHANGED');
+  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:best(Array(1001).fill(general()))}),'STATS_LIMIT');
+  throwsCode(()=>buildGeneralWinRate('势周瑜',{bestGeneral:best([general()],1)},{model:2}),'SOURCE_CHANGED');
+  for(const name of ['',null,'将'.repeat(61),'势\u0000周瑜'])throwsCode(()=>buildGeneralWinRate(name,{bestGeneral:best([])}),'INVALID_GENERAL_NAME');
+});
+
+test('文本和JSON只选择当前展示字段，不导出响应附加信息或不可信source',()=>{
+  const result=buildGeneralWinRate('势周瑜',{bestGeneral:best([general()],1)},{model:1});
+  assert.match(formatWinRate(result,{prefix:'#移动'}).text,/#移动势·周瑜胜率 排位赛 导出/);
+  result.token='synthetic-top';result.data.secret='synthetic-secret';result.data.generals[0].cookie='synthetic-cookie';result.sourceUrl='https://untrusted.invalid/?token=synthetic';
+  const output=formatWinRate(result,{exportJson:true});assert.equal(output.file.name,'三国移动-win-rate.json');assert.doesNotMatch(output.file.data,/synthetic|secret|cookie|token|untrusted/);
+  const parsed=JSON.parse(output.file.data);assert.equal(parsed.protocol,'pc-scan-v7');assert.equal(parsed.sourceUrl,'');assert.equal(parsed.data.generals[0].games,3);
+  throwsCode(()=>formatWinRate({...result,protocol:'app-qr-v1'}),'INVALID_STATS');
 });

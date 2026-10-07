@@ -74,10 +74,10 @@ test('real pinned sharp converts a synthetic private SVG to an exact JPEG Buffer
   const source=fs.readFileSync(new URL('../lib/native-card-renderer.mjs',import.meta.url),'utf8');assert.doesNotMatch(source,/\b(?:fetch|readFile|writeFile|createWriteStream|toFile|launch)\s*\(/);assert.doesNotMatch(source,/from ['"](?:node:fs|puppeteer)/);
 });
 
-test('actual records builder with 24 clipped raster portraits and nested defs renders through real sharp entirely in RAM',async()=>{
-  const sharp=(await import('sharp')).default,portrait=data(png()),recent=Array.from({length:24},(_,index)=>({name:'合成武将-'+index}));
-  const cards=buildNativeRecordCards({kind:'records',protocol:'app-qr-v1',data:{paiweiRate:{total:100,total_rate:50},g20:Array.from({length:20},(_,index)=>index%2),recent}},{imageForGeneral:()=>portrait});
-  assert.equal(cards.length,1);assert.equal((cards[0].svg.match(/<image\b/g)||[]).length,24);assert.match(cards[0].svg,/<g\b[^>]*>[\s\S]*<defs><clipPath/);
+test('actual records builder with 10 clipped raster portraits and nested defs renders through real sharp entirely in RAM',async()=>{
+  const sharp=(await import('sharp')).default,portrait=data(png()),recent=Array.from({length:10},(_,index)=>({general_names:['合成武将-'+index],outcomeCode:index%2}));
+  const cards=buildNativeRecordCards({kind:'records',protocol:'pc-scan-v7',scope:'sanguosha-community',gameVersion:'sanguosha-mobile',communityAuthenticated:true,sourceUrl:'https://api-xh.sanguosha.cn/user/gameCareerUserInfo',query:{model:0,wireMode:0},data:{winGames:50,totalGames:100},recentRecords:{kind:'recent',protocol:'pc-scan-v7',sourceUrl:'https://api-xh.sanguosha.cn/user/gameRecordList/total',query:{model:0,wireMode:0,page:1,pageSize:10},data:recent}},{imageForGeneral:()=>portrait});
+  assert.equal(cards.length,1);assert.equal((cards[0].svg.match(/<image\b/g)||[]).length,10);assert.match(cards[0].svg,/<g\b[^>]*>[\s\S]*<defs><clipPath/);
   const bytes=await createNativeCardRenderer()(cards[0]),metadata=await sharp(bytes).metadata();
   assert.equal(metadata.format,'jpeg');assert.equal(metadata.width,1080);assert.equal(metadata.height,cards[0].height);assert.ok(bytes.length<=8*1024*1024);
 });

@@ -6,7 +6,7 @@
     "sgs-official-login": [
       {
         "file": "resources/help/sgs-official-login-1.jpg",
-        "sha256": "d01ac50c24db2f7723ca00174d7c8df6c4db95bc5e0184a954d69ee400a298a3",
+        "sha256": "e298fa24a3993798b898f92792b555c8d23be7bad278eecedf359548456768e7",
         "width": 1080,
         "height": 989
       }
@@ -14,7 +14,7 @@
     "sgs-huawei-login": [
       {
         "file": "resources/help/sgs-huawei-login-1.jpg",
-        "sha256": "df3266d34e1e6a929c11720aed478f13512d98ca2e7e41b02c6a88362b55bf72",
+        "sha256": "cb6df954fda169817873911fef4327e9683604b57d007140cde0730a05387e5a",
         "width": 1080,
         "height": 989
       }
@@ -22,16 +22,16 @@
     "sgs-features": [
       {
         "file": "resources/help/sgs-features-1.jpg",
-        "sha256": "f12670787c85c5264d5632c8bfae8af7b40ca09a8153de30cff3961b5c6cb0e1",
+        "sha256": "8c5c85af88e267579ba96175891db1b7ae49b9db154dff2642989b3365a7cdb0",
         "width": 1080,
-        "height": 1531
+        "height": 1555
       }
     ]
   },
   "sources": [
     {
       "file": "lib/help-content.mjs",
-      "sha256": "03f5ec7c274096f0bd9bc99857a7db6352c95727cd373c59a12cfec2211488bd"
+      "sha256": "69da35cbb5a830f47e3a21a9305d030b36cd70566f8270a07517470d59cf4645"
     }
   ]
 }

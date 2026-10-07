@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import { buildHelpCard, buildPersonalCards, buildPublicCards } from '../lib/card-views.mjs';
 
 // All account/quantity fixtures are synthetic; no network or private screenshot.
-const result = (kind, data, protocol = 'app-qr-v1') => ({ kind, data, protocol });
+const result = (kind, data, protocol = 'pc-scan-v7') => ({ kind, data, protocol });
 const htmlFor = (kind, data, options = {}, protocol) => buildPersonalCards(result(kind, data, protocol), options).map(card => card.html).join('\n');
 const sources = html => [...html.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(match => match[1]);
 const resolver = {
   items: [
-    { key: 'dianj', label: '点将卡', fieldVerified: false },
-    { key: 'shouq', label: '手气卡', fieldVerified: false },
-    { key: 'xiny', label: '心愿积分', fieldVerified: false },
-    { key: 'yinb', label: '银币', fieldVerified: false }
+    { key: 'dianj', label: '点将卡' },
+    { key: 'shouq', label: '手气卡' },
+    { key: 'xiny', label: '心愿积分' },
+    { key: 'yinb', label: '银币' }
   ],
   imageForItem(key) { return 'file:///synthetic-public-resources/items/' + key + '.png'; },
   imageForGeneral(key) { return key === '赵云' || key === 'https://www.sanguosha.cn/storage/uploads/images/pic_index/207.png' ? 'file:///synthetic-public-resources/generals/207.png' : null; }
@@ -20,8 +20,8 @@ const resolver = {
 test('help is an inert compact mobile-version card with all standalone commands and channel limits', () => {
   const card = buildHelpCard({ prefix: '#移动' });
   assert.equal(card.width, 1080);
-  for (const text of ['资讯', '活动', '公告', '武将', '攻略', '模式', '详情', '社区', '热榜', '个人资料', '将力', '游戏资料', '能力', '战绩', '近期战绩', '资产', '皮肤', '武将收藏', '擅长武将', '导出', '#移动登录', '扫码状态', '授权状态', '取消授权', '退出授权', '账户', '解绑', '官号登录', '华为登录', '绑定', '功能', '状态', '#移动帮助']) assert.ok(card.html.includes(text), text);
-  assert.doesNotMatch(card.html, /新版授权|新版扫码状态|取消新版授权|APP 扫码/);
+  for (const text of ['资讯', '活动', '公告', '武将', '攻略', '模式', '详情', '社区', '热榜', '个人资料', '将力', '游戏资料', '能力', '战绩', '近期战绩', '资产', '皮肤', '我的武将', '我的吴国武将', '我的皮肤', '擅长武将', '导出', '#移动登录', '扫码状态', '授权状态', '取消扫码', '退出授权', '账户', '解绑', '官号登录', '华为登录', '绑定', '功能', '状态', '#移动帮助']) assert.ok(card.html.includes(text), text);
+  assert.doesNotMatch(card.html, /新版授权|新版扫码状态|取消新版授权|APP 扫码|社区喜欢|旧协议待迁移|旧查询待接入/);
   assert.match(card.html, /官号、华为游戏登录尚未接通/);
   assert.match(card.html, /绑定只记录身份/);
   assert.match(card.html, /签到、点赞、分享、兑换与领奖均不提供执行入口/);
@@ -68,19 +68,12 @@ test('resolver failures and unprepared images produce a styled placeholder witho
   assert.doesNotMatch(html, /synthetic-token/);
 });
 
-test('profile and force show source-confirmed counts and do not re-scale official percentages', () => {
-  const summary = htmlFor('summary', { nick_name: '合成角色', lv: 0, general_all_count: 500, skin_all_count: 900 });
-  assert.match(summary, /合成角色/);
-  assert.match(summary, /等级 0/);
-  assert.match(summary, /武将总数（官网统计）/);
-  assert.doesNotMatch(summary, /拥有武将/);
-  const force = htmlFor('force', { game_total: 0, game_win: 0, win_rate: 0.5, general_count: 3, skin_count: 4, official: '合成军阶' });
-  assert.match(force, /0\.5%/);
-  assert.doesNotMatch(force, />50%/);
-  assert.match(force, /军阶/);
-  assert.match(force, /合成军阶/);
-  assert.match(force, /获胜场次/);
-  assert.match(force, /拥有武将/);
+test('modern profile counts and official force metrics keep zero and values above the chart axis', () => {
+  const summary = htmlFor('summary', { nick_name: '合成角色', lv: 0, generalCount: 5, skinCount: 8, general_all_count: 500, skin_all_count: 900 });
+  for(const value of ['合成角色','等级 0','武将总数（官网统计）','拥有武将','拥有皮肤'])assert(summary.includes(value),value);
+  const force = htmlFor('force', { general_power: 12345, game_force:{totalForce:19000,doudizhuForce:0,paiweiForce:2000,guozhanForce:3000,shenfenForce:4000} });
+  for(const value of ['综合战力','斗地主战力','排位战力','国战战力','身份战力','19000','general_power'])assert(force.includes(value),value);
+  assert.doesNotMatch(force,/军阶|获胜场次|8000<|NaN|Infinity/);
 });
 
 test('gameInfo calculates only valid official win ratios and distinguishes missing data from zero', () => {
@@ -94,16 +87,10 @@ test('gameInfo calculates only valid official win ratios and distinguishes missi
   assert.doesNotMatch(absent, /总场次|VIP 0|无段位/);
 });
 
-test('records use official mode groups, conservative result codes, and recent-use portraits', () => {
-  const html = htmlFor('records', { paiweiRate: { total: 2, total_rate: 0 }, shenfenRate: { total_rate: 40, emperor_rate: 0, minister_rate: 50 },
-    guozhanRate: { total_rate: 45, wei_rate: 50, ye_rate: 10 }, doudizhuRate: { total: 4, total_rate: 55, lord_rate: 60, peasant_rate: 50 },
-    medals: { wanmei: 1, feicui: 5 }, g20: [0, 1, 2, 0.5, null, '0', '1'], recent: [{ name: '赵云' }] }, { assetResolver: resolver, model: 2 });
-  for (const text of ['排位赛', '身份场', '国战', '斗地主', '主公胜率', '野心家胜率', '地主胜率', '大师', '近期使用武将', '赵云', '#sgs战绩 2 导出']) assert.ok(html.includes(text), text);
-  assert.equal((html.match(/class="result-cell win"/g) || []).length, 2);
-  assert.equal((html.match(/class="result-cell lose"/g) || []).length, 2);
-  assert.equal((html.match(/class="result-cell ">未知/g) || []).length, 3);
-  assert.doesNotMatch(html, /拥有武将/);
-  assert.deepEqual(sources(html), ['file:///synthetic-public-resources/generals/207.png']);
+test('modern raw career HTML retains current fields without guessing legacy mode or rank semantics', () => {
+  const html=htmlFor('records',{winGames:6,totalGames:10,rate:'0.6',mvp:2,nowRank:123,maxRank:456,force:9001},{model:2});
+  for(const value of ['winGames','totalGames','0.6','nowRank','maxRank','9001','#sgs战绩 2 导出'])assert(html.includes(value),value);
+  assert.doesNotMatch(html,/主公胜率|野心家胜率|大师|class="result-cell/);
 });
 
 test('recent matches paginate all known entries, display only proven fields and never guess a per-match MVP', () => {
@@ -122,46 +109,12 @@ test('recent matches paginate all known entries, display only proven fields and 
   assert.doesNotMatch(unknown, /class="match-result (?:win|lose)"/);
 });
 
-test('24 recent-use generals stay on one records card with or without existing statistics', () => {
-  const recent = Array.from({ length: 24 }, (_, index) => ({ name: '合成武将-' + index }));
-  const statistics = { paiweiRate: { total: 100, total_rate: 50 }, medals: { wanmei: 1 }, g20: Array.from({ length: 20 }, (_, index) => index % 2) };
-  for (const extra of [{}, statistics]) {
-    const data = { ...extra, recent }, original = structuredClone(data);
-    const cards = buildPersonalCards(result('records', data));
-    assert.equal(cards.length, 1);
-    assert.equal((cards[0].html.match(/class="panel general"/g) || []).length, 24);
-    const displayed = [...cards[0].html.matchAll(/class="general-name">([^<]+)<\/div>/g)].map(match => match[1]);
-    assert.deepEqual(displayed, recent.map(row => row.name));
-    assert.match(cards[0].html, /#sgs战绩 0 导出/);
-    if (extra === statistics) {
-      assert.match(cards[0].html, /排位赛最高段位/);
-      assert.match(cards[0].html, /排位赛/);
-      assert.equal((cards[0].html.match(/class="result-cell (?:win|lose)"/g) || []).length, 20);
-    }
-    assert.deepEqual(data, original);
-  }
-});
 
-test('25 recent-use generals have one continuation and retain every name exactly once', () => {
-  const recent = Array.from({ length: 25 }, (_, index) => ({ name: '合成武将-' + index }));
-  for (const extra of [{}, { paiweiRate: { total: 100, total_rate: 50 }, g20: [0, 1] }]) {
-    const cards = buildPersonalCards(result('records', { ...extra, recent }));
-    assert.equal(cards.length, 2);
-    assert.deepEqual(cards.map(card => (card.html.match(/class="panel general"/g) || []).length), [24, 1]);
-    const displayed = cards.flatMap(card => [...card.html.matchAll(/class="general-name">([^<]+)<\/div>/g)].map(match => match[1]));
-    assert.deepEqual(displayed, recent.map(row => row.name));
-    assert.match(cards[0].html, /1 \/ 2/);
-    assert.match(cards[1].html, /2 \/ 2/);
-    if (extra.paiweiRate) {
-      assert.match(cards[0].html, /排位赛/);
-      assert.equal((cards[0].html.match(/class="result-cell (?:win|lose)"/g) || []).length, 2);
-      assert.doesNotMatch(cards[1].html, /class="result-cell/);
-    }
-  }
-});
 
-test('skins, favorites, abilities and bestGeneral have dedicated titles and readable cards rather than raw JSON', () => {
-  for (const [kind, title, command] of [['skins', '皮肤收藏', '皮肤'], ['favorites', '武将收藏', '武将收藏'], ['abilities', '能力一览', '能力'], ['bestGeneral', '擅长武将', '擅长武将']]) {
+
+
+test('abilities and bestGeneral have dedicated titles and readable cards rather than raw JSON', () => {
+  for (const [kind, title, command] of [['abilities', '能力一览', '能力'], ['bestGeneral', '擅长武将', '擅长武将']]) {
     const html = htmlFor(kind, { rows: [{ name: '合成条目', source_count: 2, details: { source_label: '合成说明' } }] });
     assert.ok(html.includes('<title>' + title + '</title>'));
     assert.match(html, /合成条目/);
@@ -171,11 +124,9 @@ test('skins, favorites, abilities and bestGeneral have dedicated titles and read
   }
 });
 
-test('unverified protocol uses readable original fields instead of assigning old asset semantics', () => {
-  const html = htmlFor('assets', { yb: 2 }, {}, 'pc-scan-v7');
-  assert.match(html, />yb<\/span>2/);
-  assert.doesNotMatch(html, /元宝/);
-  assert.match(html, /#sgs资产 导出/);
+test('stopped legacy and unknown protocols cannot render personal HTML or resolve artwork', () => {
+  for(const protocol of ['app-qr-v1','unknown',undefined])assert.equal(buildPersonalCards({...result('assets',{yb:2}),protocol},{assetResolver:{imageForItem:()=>assert.fail('Unsupported session cannot resolve artwork')}}),null);
+  for(const kind of ['skins','favorites'])assert.equal(buildPersonalCards(result(kind,{name:'never-display-retired-query'})),null);
 });
 
 test('views escape injected markup, remove sensitive fields, and never alter input', () => {
@@ -225,12 +176,12 @@ test('help banner only resolves fixed public heroes and never uses a user avatar
 
 test('personal cards cap long results at eight pages with an explicit complete-export notice', () => {
   const rows = Array.from({ length: 60 }, (_, index) => ({ name: '合成收藏-' + index }));
-  const cards = buildPersonalCards(result('favorites', rows));
+  const cards = buildPersonalCards(result('abilities', rows));
   assert.equal(cards.length, 8);
   for (const card of cards) {
     assert.match(card.html, /仅展示前 8 页（本次共 10 页）/);
     assert.match(card.html, /完整资料请导出/);
-    assert.match(card.html, /#sgs武将收藏 导出/);
+    assert.match(card.html, /#sgs能力 导出/);
   }
   const html = cards.map(card => card.html).join('\n');
   assert.match(html, /合成收藏-47/);

@@ -6,7 +6,7 @@ import {preparePortraitResolver} from '../lib/memory-portraits.mjs';
 const origin='https://sjpubicres.sanguosha.cn/release/character_heads/';
 const url=name=>origin+name+'.png';
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/X1cAAAAASUVORK5CYII=','base64');
-const recent=urls=>({kind:'recent',data:urls.map(value=>({general_avatar:[value]}))});
+const recent=urls=>({kind:'recent',protocol:'pc-scan-v7',data:urls.map(value=>({general_avatar:[value]}))});
 const base={items:[{key:'yb',label:'元宝'}],imageForGeneral:value=>value==='刘备'?'file:///public/general-1.png':null,imageForItem:()=> 'file:///public/yb.png',imageForOfficialStatic:()=>null};
 
 test('仅本次RAM准备PNG/JPEG，保留base方法，匿名请求不携带本人信息',async()=>{

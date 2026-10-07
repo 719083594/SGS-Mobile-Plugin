@@ -132,7 +132,7 @@ test('bundled public JPEG portraits remain canonical and respect the per-image b
 
 test('native public portrait reader interoperates with strict SVG image validation',t=>{
   const f=fixture(t),{imageForGeneral}=createNativePortraitResolver({root:f.root});
-  const cards=buildNativeRecordCards({kind:'records',protocol:'app-qr-v1',data:{recent:[{name:'刘备'}]}},{imageForGeneral,dataAlreadyRedacted:true});
+  const cards=buildNativeRecordCards({kind:'records',protocol:'pc-scan-v7',scope:'sanguosha-community',gameVersion:'sanguosha-mobile',communityAuthenticated:true,sourceUrl:'https://api-xh.sanguosha.cn/user/gameCareerUserInfo',query:{model:0,wireMode:0},data:{winGames:1,totalGames:2},recentRecords:{kind:'recent',protocol:'pc-scan-v7',sourceUrl:'https://api-xh.sanguosha.cn/user/gameRecordList/total',query:{model:0,wireMode:0,page:1,pageSize:10},data:[{general_names:['刘备'],outcomeCode:0}]}},{imageForGeneral,dataAlreadyRedacted:true});
   assert.equal(cards.length,1);assert.equal(cards[0].private,true);
   assert.match(cards[0].svg,/<image\b/);assert(cards[0].svg.includes(imageForGeneral('刘备')));
   assert.doesNotMatch(cards[0].svg,/href="(?:file:|https?:)/);

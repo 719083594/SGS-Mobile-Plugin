@@ -1,46 +1,54 @@
-# 本人资料中文显示与字段证据
+# 本人资料字段与显示证据
 
-核验日期：2026-10-07。`lib/format-personal.mjs` 是原创显示逻辑，依据官方网页中 API 方法、返回数据变量与相邻中文标签的绑定关系制作。没有复制官方页面组件或查询真实账号接口。以下映射仅应用于仍保留的历史 `app-qr-v1` 会话；当前微信及未知协议继续保留官方字段名，不套用旧接口含义。Bot 已移除旧 APP 扫码入口。
-
-当前使用 `#sgs登录` 创建微信二维码，`#sgs扫码状态` 在官方本人资料中严格校验 `userId`，不拿旧 APP 资料的 `id` 代替。新二维码等待、失败、过期或 `#sgs取消授权` 时保留原有效授权；成功后原子替换主会话并移除本 Bot 旧凭证与全部待扫码内容。后续查询只使用当前协议支持的接口，不把已删除的旧会话作为回退。当前完整拥有列表尚未接入，不能由扫码成功推断收藏已全量覆盖。
+核验日期：2026-10-07。原创格式器与原生卡片只接受当前 `pc-scan-v7`；旧APP协议和旧个人接口的积极显示支持已删除。中文含义来自当前官方接口封装与相邻UI标签，未核实字段保留原名，不沿用旧结构猜译。当前查询经本人授权只读核验，公开文档不保存私人响应。
 
 ## 官方来源
 
-- [接口方法与路径](https://xianhua.sanguosha.cn/_nuxt/recordApi.2943a9d0.js)：`userRecordHome` 对应 summary，`userGameInfo` 对应 force，`allGameRecord/recentGameList` 对应 records/recent，`h5UserInfo/h5ObtainDetail` 对应 gameInfo/assets。
-- [PC 个人战绩页](https://xianhua.sanguosha.cn/_nuxt/record.70e69d2f.js)：概览、胜率、各模式统计、近20场结果、近期对局与最高段位。
-- [H5 我的战绩页](https://xianhua.sanguosha.cn/_nuxt/record.5e722f27.js)：游戏资料、各模式胜率计算与欢乐豆。此文件和下一文件的名称来自官方构建资源清单，只读取得公开 JavaScript，没有携带会话或请求个人数据。
-- [H5 资产详情页](https://xianhua.sanguosha.cn/_nuxt/obtain.cb450439.js)：道具中文标签及武将、皮肤统计展示。
+- [当前笔记战绩API封装](https://note.sanguosha.cn/record/assets/index-Oam2QQVM.js)：本人概览、游戏资料、资产、将力、能力、战绩、近期与擅长武将的当前端点和参数。
+- [当前战绩页面](https://note.sanguosha.cn/record/assets/index-CXtl96WG.js)：资产11类标签、五项战力、模式、场次和比例显示。
+- [官方战绩页](https://note.sanguosha.cn/record/) 与 [当前社区授权构建资源](https://cf-resources.sanguosha.cn/web/c2d4aC13ZWI/_next/static/chunks/400-e9aa5397ef7c35d9.js)：官方微信授权和网页会话交换。
+- [官方公开APK](https://hidownload.sanguosha.cn/apk/sgxh_yoka.apk)：拥有列表接口与官方分页/筛选调用的有界静态证据，未运行APK。
 
-官方构建文件名可能随发布变化；上述链接是本次核验依据，不是插件运行时下载或执行的依赖。
+构建资源文件名会随官方发布变化，以上是本次证据，不是插件运行时下载执行的依赖。端点范围与授权边界见 [API-AUDIT.md](API-AUDIT.md)。
 
-## 已解释的字段
+## 已解释字段
 
-| kind | 字段与显示含义 | 解释边界 |
+| kind | 字段与显示 | 边界 |
 | --- | --- | --- |
-| summary | `nick_name` 昵称、`lv` 等级；`general_all_count` 武将总数、`skin_all_count` 皮肤总数 | 两个总数是 PC 拥有统计的分母，不是本人的拥有量 |
-| force | `game_total` 总场次、`game_win` 获胜场次、`win_rate` 胜率、`general_count` 拥有武将、`skin_count` 拥有皮肤 | `win_rate` 在官方页面直接加 `%`，不再次乘100；不从接口名猜测其他字段是将力分数或排名 |
-| records / 排位 | `paiweiRate.total` 场次、`paiweiRate.total_rate` 胜率 | 模式标签来自官方选择列表 |
-| records / 身份 | `shenfenRate` 中 `total_rate` 总胜率、`emperor_rate` 主公、`minister_rate` 忠臣、`rebel_rate` 反贼、`provocateur_rate` 内奸胜率 | 百分数字段直接显示，不重新计算 |
-| records / 国战 | `guozhanRate` 中 `total_rate` 总胜率、`wei_rate/shu_rate/wu_rate/qun_rate/ye_rate` 魏国/蜀国/吴国/群雄/野心家胜率 | 百分数字段直接显示 |
-| records / 斗地主 | `doudizhuRate.total` 场次、`total_rate` 总胜率、`lord_rate` 地主胜率、`peasant_rate` 农民胜率 | 不与 gameInfo 的胜场、总场次字段混用 |
-| records / 其他 | `recent[].name` 近期使用武将；`g20[]` 近20场结果；`medals` 用于排位最高段位 | 近期使用不等于拥有列表。官方结果图仅有零/其他两分支，未提供完整结果码枚举；摘要仅将0显示为胜、1显示为负，其余显示未知，原值保留在导出中。最高段位按官方顺序取正数项：`chuanshuo` 传说、`wanmei` 大师、`feicui` 翡翠、`huangjin` 黄金、`baiyin` 白银、`qingtong` 青铜；未返回的段位不填造 |
-| recent | 数组项 `Model` 模式、`begin_time` 时间、`result` 结果 | 原样使用官方显示值，不猜时间单位或转换日期；分页与摘要条数不代表完整历史 |
-| assets | `yb` 元宝、`jh` 将魂、`yl` 雁翎、`zml` 招募令、`ylj` 雁翎甲、`ssbz` 史诗宝珠；`hld` 欢乐豆 | 前六项直接来自资产页，欢乐豆来自 H5 战绩页；缺失字段省略，不凭空填0，不把对象字段数当成资产 |
-| gameInfo / 身份与段位 | `nick` 昵称、`lv` 等级、`vip` VIP、`nowDivision` 当前段位、`maxDivision` 最高段位、`maxTitle` 最高称号 | `official` 仅以原字段名保留，不猜译成军阶 |
-| gameInfo / 游戏统计 | `rankWin` 排位胜场、`douDiZhuWin` 斗地主胜场、`totalGame` 总场次、`totalMvp` MVP；`generalNum/generalTotal` 武将统计、`skinNum/skinTotal` 皮肤统计 | 武将/皮肤以官网的分子/分母显示；统计量不等于完整名单 |
+| summary | `nick_name`昵称、`lv`等级、`generalCount`拥有武将、`skinCount`拥有皮肤、`general_all_count/skin_all_count`官网总数 | 总数与本人拥有数分别显示，不能拿分母作拥有量 |
+| force | `game_force.totalForce`综合、`doudizhuForce`斗地主、`paiweiForce`排位、`guozhanForce`国战、`shenfenForce`身份战力 | 以官方原值显示；图表8000轴不裁剪实际数值。`general_power`仅保留原字段名，未证明其中文含义 |
+| records | 当前根对象 `winGames`胜场、`totalGames`场次、`rate`官方比例、`mvp`、`force`、`nowRank/maxRank`及`rates`分项 | 不套旧模式对象或旧段位枚举；有效正式场次与近期样本分开 |
+| recent | 官方 `modeName`、秒级`beginTime`、明确结果码、本人的`players[].general`和`myGeneralAvatar`、MVP/逃跑 | 投影只取`isMe:true`武将名，时间转上海时区；不输出其他玩家或内部账号标识 |
+| assets | `yb`元宝、`jh`将魂、`yl`雁翎、`zml`招募令、`ylj`雁翎甲、`ssbz`史诗宝珠、`dianj`点将卡、`hld`欢乐豆、`shouq`手气卡、`xiny`心愿积分、`yinb`银币 | 11类独立道具UI；有效0保留，缺失不填0，不从未知字段数推算资产 |
+| gameInfo | `nick`昵称、`lv`等级、`vip`、`nowDivision/maxDivision`当前/最高段位、`maxTitle`称号；`rankWin/douDiZhuWin/totalGame/totalMvp`统计 | `official`等未解释值保留原名，不猜成军阶；仅按当前返回的同名字段显示 |
+| gameInfo拥有统计 | `generalNum/generalTotal`、`skinNum/skinTotal` | 本人数量和官方分母一起显示，不等于完整名单 |
+| abilities | `ri`排位、`ii`身份、`nw`国战、`ddz`斗地主，及各`Total`官方对比统计 | 模式前缀由当前UI的mode切换与下拉标签共同证明；`Total`不猜作个人总场次或数量单位 |
+| bestGeneral | `list[].total/win`与`info.name`等 | 所选模式擅长武将子集；不是全部拥有或完整武将生涯清单 |
 
-H5 页面将排位、斗地主及总胜率分别按 `rankWin/rankNum*100`、`douDiZhuWin/douDiZhuTotal*100`、`totalWin/totalGame*100` 截断为整数。格式器只有在分子、分母为有效数值、分母大于0且胜场不超过总场次时才按该公式显示；缺失或无效分母不伪造0%结果。
+`records.rate` 的有效契约为0至1的比例，按官方UI乘100并加百分号，最多显示两位小数；原始JSON保留官方比例。正式胜率图与胜率命令优先使用有效`winGames/totalGames`，总场次0标为暂无记录，缺失或不一致的分母不伪造0%。官方角色分项`rates[].rate`同样按比例×100显示，仅接受已核实的模式角色标签；未知分项不猜译。
 
-官方 PC 战绩页的直接证据：`g20` 图片条件为 `a==0?"victory":"lose"`；段位条件包含 `_.data.medals.wanmei>0?u="大师"`。前者只证明页面的两分支行为，不证明所有非零值都是已定义的失败码；因此格式器采用上述保守边界。
+游戏资料的排位、斗地主及总胜率分别按 `rankWin/rankNum*100`、`douDiZhuWin/douDiZhuTotal*100`、`totalWin/totalGame*100` 截断为整数；只有数值有效、分母大于0且胜场不超过场次时显示。近期结果0为胜、1为负，其余为未知；未知不参与近期样本胜率，且最多只统计官方当前一页10场。近期记录不是完整历史，也不能替代正式战绩胜率。
 
-## 摘要、未知字段与完整导出
+Bot模式 `0全部/1排位/2身份/3国战/4斗地主` 对应当前官方 `mode=0/4/1/2/3`。查询和显示都保留所选模式；指定武将只精确匹配该模式的官方擅长列表，神、界、势不合并，不跨模式补值或把未返回武将当零胜率。
 
-原始本人接口命令末尾加 `导出`，例如 `#sgs资产 导出`、`#sgs战绩 2 导出`、`#sgs近期战绩 0 2 导出`，可获得该次响应的完整已脱敏 JSON。收藏投影视图 `#sgs我的武将`、`#sgs我的皮肤` 只接受页码；如需收藏接口的本次完整响应，私聊使用 `#sgs皮肤 导出`，它仍不是全部拥有清单。导出使用同一本人私聊权限与原有内存文件上传链路。命令前缀随实例配置变化。
+## 本人拥有分页
 
-`generalSkins.generalList` 与 `generalSkins.skinList` 是官方当前返回的武将、皮肤条目；`gameInfo.generalNum` 与 `gameInfo.skinNum` 是官方拥有数量，`generalTotal/skinTotal` 是游戏统计分母，三者不能混用。本人收藏视图分别显示这些数量，按本次响应24项分页。旧官方 `obtain` 页面仅在客户端把武将显示限制为8项，`h5HeroSkin()` 请求没有分页参数；这不能证明接口恒定返回8项，也不能证明返回列表完整。当前网页未发现已核实的全量分页或势力字段，不以公开图鉴、近期使用、社区喜欢或猜测的 ID 填补缺项。
+`pc-scan-v7` 的 `GET /user/gameGeneral/total` 按当前严格验证的本人`userId`限定身份，官方页面大小12。武将用`generals`，皮肤用`skins`；每项必须严格`isHave:true`。无效条目、重复ID或计数/分页不一致时整页拒绝。投影范围为 `official-own-paginated`。
 
-摘要只显示有证据的字段，并提示未映射字段；数组摘要受 `maxItems` 限制。没有中文映射的结构继续保留官方字段名，内容过长自动转 JSON 文件。完整导出保留未知对象、数组及字段，沿用接口层既有隐私清洗、响应大小、层级与条数边界；不会为了显示摘要修改原始业务对象。`maxReplyChars` 控制摘要或原字段 JSON 的消息转文件阈值。
+| 官方字段 | 投影 | 显示 |
+| --- | --- | --- |
+| `have` | `ownTotal` | 本人全部拥有数；筛选时仍为全部势力拥有量 |
+| `searchNum` | `total/filteredTotal` | 当前筛选匹配的本人拥有数，用于计算页数 |
+| 原`total` | `catalogTotal` | 官方游戏总数，非本人拥有量或本页条数 |
+| `generals/skins.length` | `returnedCount/items.length` | 当前页最多12项，序号按官方页码连续 |
+| `countryType` | `countryType/countryLabel` | 0全部、1魏、2蜀、3吴、4群、5神；皮肤仅全部 |
 
-独立 `formatPersonal()` 默认执行隐私清洗；核心仅在取得 `CommunityAuthClient.queryOwn()` 已清洗结果后设置 `dataAlreadyRedacted:true`，避免对未知字符串再次解码或去标签。外部调用者不可对未经清洗的数据启用此选项。
+已在内存逐页核验拥有标志、计数稳定、ID无重复、末页/越界页和吴国首末页筛选。Bot每条命令只取当前页，不长期保存本人图库；只有单页涵盖全部匹配时`complete:true`。`#sgs我的武将 [势力] [页]`、`#sgs我的吴国武将 [页]`、`#sgs我的皮肤 [页]`可翻页，下一页保留武将势力。本人皮肤不支持按武将名搜索；`#sgs关羽皮肤`是公开绘影堂。
 
-Bot 仍仅在本人私聊通过 Buffer 发送文件，大文件沿用内存 gzip；CLI 仅输出文本/JSON，不自动保存明文文件。本次使用合成数据测试字段、百分比、缺失值、未知字段保留、导出参数及私聊隔离。与真实 APP 的逐项数值、更新时点、角色一致性和完整覆盖核对仍待完成，社区授权不因此变成官号或华为游戏登录。
+`#sgs皮肤`无参数等同我的皮肤；`#sgs武将收藏`兼容我的武将，旧社区喜欢接口已删除。公开图鉴、近期使用和擅长列表都不能补全拥有目录。本人内部`id/generalId`不猜配公开目录。武将头像仅按唯一精确名称查本地公共头像，皮肤只用响应里的官方固定目录原画，`iconUrl`品质小标不能冒充皮肤。图片与本人原生卡仅留本次内存。
+
+## 摘要与导出
+
+`#sgs资产 导出`、`#sgs战绩 2 导出`、`#sgs近期战绩 0 2 导出`等取得该次查询的已脱敏JSON，仅本人私聊；拥有投影命令不提供全量导出。未映射字段保留官方名称，未知对象/数组不因摘要限制删除；近期结果先投影本人允许字段，其他玩家内容不会进入输出。胜率命令导出已筛选的统计字段，群内卡片与文字回退不附JSON。
+
+`formatPersonal()`默认隐私清洗，核心只对已经由`queryOwn()`清洗的结果设置`dataAlreadyRedacted:true`，避免二次解码丢失业务文字；外部调用者不能对未经清洗数据启用此项。凭据、联系方式、实名、IP、设备及账号标识均过滤。Bot通过内存Buffer发文件，大JSON在内存gzip；CLI只输出终端，不自动保存明文本人文件。测试使用合成数据核对字段、百分比、缺失值、未知值、导出、私聊隔离和实际图片解码。更广的APP覆盖与不同角色一致性仍需逐项核对，社区授权不构成官号/华为游戏认证。
