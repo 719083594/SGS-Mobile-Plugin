@@ -18,7 +18,7 @@
 | [xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/web/api/auth/login`、`/web/api/auth/logout` | 官方扫码票据交换网页会话与注销；不承诺注销其他官方客户端 |
 | [api-xh.sanguosha.cn](https://xh.sanguosha.cn/web/2) | `/user/userInfo`、`gameSummary`、`getAllOtherGameUser` | 当前本人身份校验、游戏概览、其他游戏角色映射，不代表官号/华为游戏认证 |
 | 同上 | `/user/generalGameInfo`、`gameProperty`、`gameForce`、`gameGeneralAbilities` | 当前本人游戏资料、11类资产、官方战力与能力；未解释字段不猜译 |
-| 同上 | `/user/gameCareerUserInfo`、`gameRecordList/total`、`gameBestGeneralNew` | 所选模式正式统计、近期每页10条和擅长武将子集；不当作完整历史或全部拥有 |
+| 同上 | `/user/gameCareerUserInfo`、`gameRecordList/total`、`gameBestGeneralNew` | 所选模式正式统计、近期本批前10条图片/样本和擅长武将子集；不当作完整历史或全部拥有 |
 | 同上 | `GET /user/gameGeneral/total` | 当前本人拥有武将/皮肤，每页12项；武将支持魏/蜀/吴/群/神筛选，已逐页授权验证拥有标志、计数、去重和边界 |
 
 当前所有个人查询使用`pc-scan-v7`；旧APP扫码和旧个人查询协议已删除。`#sgs皮肤`无参数兼容“我的皮肤”，`#sgs武将收藏`兼容“我的武将”，旧社区喜欢接口已删除。历史研究记录不列为当前已连接API，见 [早期验收记录](VERIFICATION.md)。没有接入手机验证码/密码登录，没有调用未核实游戏绑定或华为游戏授权端点。

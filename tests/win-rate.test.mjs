@@ -70,20 +70,27 @@ test('近期仅按安全DTO outcomeCode统计本页最多10条，未知排除，
   const rows=[{outcomeCode:0,result:'失败',token:'synthetic-secret'},{outcomeCode:1,result:'胜利'},{outcomeCode:null},{outcomeCode:'0'},{outcomeCode:2}];
   const recent=envelope('recent',rows,2);recent.query.page=2;
   const result=buildWinRateOverview({records:records({},2),recent},{model:2}),row=result.data.entries.at(-1);
-  assert.equal(row.value,'50%');assert.match(row.detail,/1 胜 \/ 1 负；未知 3 场，已排除；第 2 页，本次取 5 条/);
-  assert.match(result.data.notice,/最多10条/);assert.doesNotMatch(JSON.stringify(result),/synthetic|近20/);
+  assert.equal(row.value,'50%');assert.match(row.detail,/1 胜 \/ 1 负；未知 3 场，已排除；请求第 2 页，本批取前 5 条/);
+  assert.match(result.data.notice,/前10条/);assert.doesNotMatch(JSON.stringify(result),/synthetic|近20/);
   assert.equal(buildWinRateOverview({recent:envelope('recent',[])}).data.entries.at(-1).value,'暂无记录');
   assert.equal(buildWinRateOverview({recent:envelope('recent',[{outcomeCode:null}])}).data.entries.at(-1).value,'无可统计结果');
 });
 
 test('近期原始list、超限页长或不一致模式元数据拒绝，不能冒充当前模式样本',()=>{
   throwsCode(()=>buildWinRateOverview({recent:envelope('recent',{list:[{result:0}]})}),'SOURCE_CHANGED');
-  throwsCode(()=>buildWinRateOverview({recent:envelope('recent',Array(11).fill({outcomeCode:0}))}),'SOURCE_CHANGED');
+  throwsCode(()=>buildWinRateOverview({recent:envelope('recent',Array(101).fill({outcomeCode:0}))}),'SOURCE_CHANGED');
   throwsCode(()=>buildWinRateOverview({recent:envelope('recent',[null])}),'SOURCE_CHANGED');
   throwsCode(()=>buildWinRateOverview({recent:envelope('recent',[],1)},{model:2}),'SOURCE_CHANGED');
   for(const patch of [{page:0},{page:1001},{pageSize:20}]){
     const value=envelope('recent',[]);Object.assign(value.query,patch);throwsCode(()=>buildWinRateOverview({recent:value}),'SOURCE_CHANGED');
   }
+});
+test('larger bounded official batches calculate a labelled ten-record sample without changing formal win rate',()=>{
+  const recent=envelope('recent',[...Array(10).fill({outcomeCode:0}),...Array(10).fill({outcomeCode:1})]);
+  const input=structuredClone(recent),result=buildWinRateOverview({records:records({winGames:3,totalGames:10}),recent});
+  assert.equal(result.data.entries[0].value,'30%');assert.equal(result.data.entries.at(-1).value,'100%');
+  assert.match(result.data.entries.at(-1).detail,/取前 10 条/);assert.deepEqual(recent,input);
+  recent.data[19]=null;throwsCode(()=>buildWinRateOverview({recent}),'SOURCE_CHANGED');
 });
 
 test('新嵌套info精确名称匹配保留势界神前缀，只有当前模式且不读能力或个人字段',()=>{

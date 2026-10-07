@@ -9,9 +9,15 @@ test('records keep invoking heroes only, verified outcome codes and official sec
   assert.doesNotMatch(JSON.stringify(out),/synthetic-private|other-player|"players"|"nick"|token/);assert.deepEqual(input,before);
 });
 test('crossed page, mode, source, legacy and oversized records fail before projection',()=>{
-  const good=envelope([row()]);for(const value of [{...good,protocol:'app-qr-v1'},{...good,sourceUrl:'https://evil.invalid'},{...good,query:{...good.query,page:2}},envelope([row({mode:'3'})],{model:1,wireMode:4,page:1,pageSize:10}),envelope(Array.from({length:11},()=>row()))]){
+  const good=envelope([row()]);for(const value of [{...good,protocol:'app-qr-v1'},{...good,sourceUrl:'https://evil.invalid'},{...good,query:{...good.query,page:2}},envelope([row({mode:'3'})],{model:1,wireMode:4,page:1,pageSize:10}),envelope(Array.from({length:101},()=>row()))]){
     const model=value.query?.model??0;assert.throws(()=>projectRecentRecords(value,{model,page:1}),e=>e.code==='SOURCE_CHANGED');
   }
+});
+test('official size parameter is a request, bounded larger batches remain complete and self-only',()=>{
+  const input=envelope(Array.from({length:20},()=>row()));const out=projectRecentRecords(input);
+  assert.equal(out.query.pageSize,10);assert.equal(out.data.length,20);assert.match(out.notice,/前10条/);
+  assert.doesNotMatch(JSON.stringify(out),/other-player|private-name|private-token|"players"/);
+  input.data.list[19].players=null;assert.throws(()=>projectRecentRecords(input),error=>error.code==='SOURCE_CHANGED');
 });
 test('unknown mode labels are not presented as all modes and remote avatar references are rejected',()=>{
   const out=projectRecentRecords(envelope([row({mode:'99',myGeneralAvatar:['https://evil.invalid/a.png','file:///private','https://sjpubicres.sanguosha.cn/release/character_heads/synthetic.png?token=synthetic']})]));

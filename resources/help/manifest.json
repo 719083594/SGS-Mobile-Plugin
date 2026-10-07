@@ -22,7 +22,7 @@
     "sgs-features": [
       {
         "file": "resources/help/sgs-features-1.jpg",
-        "sha256": "8c5c85af88e267579ba96175891db1b7ae49b9db154dff2642989b3365a7cdb0",
+        "sha256": "47693abe631822b3ac5e8aed0a99a06071ce45f608ea215d0567b5556b176224",
         "width": 1080,
         "height": 1555
       }
@@ -31,7 +31,7 @@
   "sources": [
     {
       "file": "lib/help-content.mjs",
-      "sha256": "69da35cbb5a830f47e3a21a9305d030b36cd70566f8270a07517470d59cf4645"
+      "sha256": "ef4c9107cb506bac1419e26a727ce253ae94af8a53dcd912436eb127a8f8fcde"
     }
   ]
 }

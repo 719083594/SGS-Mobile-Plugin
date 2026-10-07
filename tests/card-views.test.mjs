@@ -93,17 +93,17 @@ test('modern raw career HTML retains current fields without guessing legacy mode
   assert.doesNotMatch(html,/主公胜率|野心家胜率|大师|class="result-cell/);
 });
 
-test('recent matches paginate all known entries, display only proven fields and never guess a per-match MVP', () => {
-  const data = Array.from({ length: 23 }, (_, index) => ({ Model: '身份场', begin_time: '合成时间-' + index, result: index % 2 ? '失败' : '胜利',
+test('recent HTML limits a 20-record batch to 10 visible matches with truthful batch counts and private export', () => {
+  const data = Array.from({ length: 20 }, (_, index) => ({ Model: '身份场', begin_time: '合成记录-' + String(index).padStart(2,'0'), result: index % 2 ? '失败' : '胜利',
     general_avatar: ['https://www.sanguosha.cn/storage/uploads/images/pic_index/207.png'], general_id: 'unverified-internal-id', mvp: 'never-display-this-marker' }));
   const cards = buildPersonalCards(result('recent', data), { assetResolver: resolver, prefix: '#移动', model: 2, page: 3 });
-  assert.equal(cards.length, 3);
+  assert.equal(cards.length, 1);
   const html = cards.map(card => card.html).join('\n');
-  for (let index = 0; index < 23; index++) assert.ok(html.includes('合成时间-' + index), String(index));
-  assert.match(html, /身份场 · 第 3 页 · 本页 23 场/);
+  for (let index = 0; index < 20; index++) assert.equal(html.includes('合成记录-' + String(index).padStart(2,'0')),index<10);
+  assert.match(html, /身份场 · 第 3 页 · 本批返回 20 条/);assert.match(html,/本次展示前10条/);assert.match(html,/导出本批 JSON/);
   assert.match(html, /#移动近期战绩 2 3 导出/);
   assert.doesNotMatch(html, /never-display|unverified-internal-id|MVP/);
-  assert.equal(sources(html).length, 23);
+  assert.equal(sources(html).length, 10);
   const unknown = htmlFor('recent', [{ Model: '合成模式', result: '官方特别结果' }]);
   assert.match(unknown, /官方特别结果/);
   assert.doesNotMatch(unknown, /class="match-result (?:win|lose)"/);

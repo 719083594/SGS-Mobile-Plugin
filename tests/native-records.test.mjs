@@ -25,10 +25,11 @@ test('modern record view rejects legacy, wrong source and crossed modes before r
  for(const r of [null,{},result({}, {protocol:'app-qr-v1'}),result({}, {sourceUrl:'https://evil.invalid'}),result({}, {query:{model:1,wireMode:4}}),result({}, {scope:'other'}),result({winGames:41}),result({totalGames:-1})])assert.equal(buildNativeRecordCards(r,options),null);
  assert.equal(calls,0);
 });
-test('modern formal counts and recent page are separated in one private JPEG with 12 own portraits',async()=>{
- const portrait=dataUrl(png()),names=Array.from({length:10},(_,i)=>'合成武将'+i),r=result({rates:[{name:'主公',rate:'0.75'}],force:0},{recentRecords:recent(names)}),before=structuredClone(r);
+test('modern formal counts and larger official batch show only ten own records in one private JPEG',async()=>{
+ const portrait=dataUrl(png()),names=Array.from({length:20},(_,i)=>'合成武将'+i),r=result({rates:[{name:'主公',rate:'0.75'}],force:0},{recentRecords:recent(names)}),before=structuredClone(r);
  const cards=buildNativeRecordCards(r,{imageForGeneral:()=>portrait});assert.equal(cards.length,1);assert(cards[0].private);assert.equal((cards[0].svg.match(/<image /g)||[]).length,10);
- for(const value of ['50%','75%','20 胜 / 40 场','近期本页胜率','本页 10 条','每页最多10条'])assert(cards[0].svg.includes(value),value);
+ for(const value of ['50%','75%','20 胜 / 40 场','近期本页胜率','本页 10 条','本批前10条'])assert(cards[0].svg.includes(value),value);
+ assert(!cards[0].svg.includes('合成武将19'));
  assert.doesNotMatch(cards[0].svg,/近20场|href="(?:https?:|file:)|<script/);assert.deepEqual(r,before);
  const bytes=await createNativeCardRenderer()(cards[0]),decoded=await sharp(bytes).raw().toBuffer({resolveWithObject:true});assert.equal(decoded.info.width,1080);assert.equal(decoded.info.height,cards[0].height);assert.equal(decoded.data.length,1080*cards[0].height*3);
 });

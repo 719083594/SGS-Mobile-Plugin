@@ -57,7 +57,14 @@ test('近期战绩保留官方模式时间结果，摘要限条，导出保留�
   assert.match(text,/身份场 · 示例时间一 · 失败/);assert.doesNotMatch(text,/示例时间三/);
   assert.match(text,/#移动近期战绩 2 3 导出/);
   assert.deepEqual(exported('recent',data,{model:2,page:3}).data,data);
-  assert.match(formatPersonal(result('recent',[])).text,/本页暂无记录/);
+  assert.match(formatPersonal(result('recent',[])).text,/本批暂无记录/);
+});
+
+test('20条现代近期本批摘要显示真实返回数和前8条，JSON保留完整本批20条',()=>{
+  const data=Array.from({length:20},(_,i)=>({Model:'排位赛',begin_time:'合成记录-'+String(i).padStart(2,'0'),result:i%2?'失败':'胜利',general_names:['合成武将']}));
+  const text=formatPersonal(result('recent',data)).text;
+  assert.match(text,/本批返回：20条；显示前8条/);assert.match(text,/合成记录-07/);assert.doesNotMatch(text,/合成记录-08/);
+  assert.deepEqual(exported('recent',data).data,data);assert.equal(exported('recent',data).data.length,20);
 });
 
 test('gameInfo胜率按官方公式截断，仅有效分母计算，不伪造缺失段位或零胜率',()=>{

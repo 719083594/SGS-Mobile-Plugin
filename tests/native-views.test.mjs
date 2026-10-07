@@ -75,11 +75,13 @@ test('profile artwork reads only declared original fields and preserves page ima
   assert.equal(cards.length,8);for(const card of cards){assert((card.svg.match(/<image\b/g)||[]).length<=64);assert(Buffer.byteLength(card.svg)<=4*1024*1024);assert.match(card.svg,/节选前 8 页/);}
 });
 
-test('recent pages show only proven row fields, retain every row and keep valid source results',()=>{
-  const data=Array.from({length:23},(_,i)=>({Model:'身份场',begin_time:'合成时间-'+i,result:i%2?'失败':'胜利',general_avatar:['https://untrusted.invalid/private.png'],mvp:'never-guess-single-mvp',general_id:'never-guess-game-id'}));
+test('a modern 20-row recent batch renders only its first 10 records with an explicit batch/export notice',async()=>{
+  const data=Array.from({length:20},(_,i)=>({Model:'身份场',begin_time:'合成记录-'+String(i).padStart(2,'0'),result:i%2?'失败':'胜利',general_avatar:['https://untrusted.invalid/private.png'],mvp:'never-guess-single-mvp',general_id:'never-guess-game-id'}));
   const cards=buildNativePersonalCards(result('recent',data),{prefix:'#移动',model:2,page:3}),svg=svgFor(cards),text=labels(cards);
-  assert(cards.length>=2);for(let i=0;i<23;i++)assert(text.includes('合成时间-'+i));assert.match(text,/身份场 · 第 3 页 · 本页 23 场/);assert.match(text,/#移动近期战绩 2 3 导出/);
+  assert.equal(cards.length,1);for(let i=0;i<20;i++)assert.equal(text.includes('合成记录-'+String(i).padStart(2,'0')),i<10);
+  assert.match(text,/身份场 · 第 3 页 · 本批返回 20 条/);assert.match(text,/本次展示前10条/);assert.match(text,/导出本批 JSON/);assert.match(text,/不代表完整历史/);assert.match(text,/#移动近期战绩 2 3 导出/);
   assert.doesNotMatch(svg,/untrusted|never-guess|MVP|href="https?:/);
+  const jpeg=await createNativeCardRenderer()(cards[0]);assert.equal(jpeg[0],255);assert.equal(jpeg[1],216);
   assert.match(labels(buildNativePersonalCards(result('recent',[{result:'官方特别结果'}]))),/官方特别结果/);
 });
 

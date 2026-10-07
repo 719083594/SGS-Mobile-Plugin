@@ -26,11 +26,11 @@ test('固定域名和目录精确验证，任意URL、凭据、端口、查询�
   let calls=0;await preparePortraitResolver(recent(invalid),base,{fetchImpl:async()=>{calls++;return new Response(png)}});assert.equal(calls,0);
 });
 
-test('只取recent每条第0图，去重，最多20条且并发硬上限为3',async()=>{
+test('100条recent本批只为前10条取第0图，去重且并发硬上限为3',async()=>{
   let calls=0,active=0,peak=0;const seen=[];
-  const data=recent(Array.from({length:21},(_,i)=>url('hero_'+i)));data.data[0].general_avatar.push(url('ignored_second'));
+  const data=recent(Array.from({length:100},(_,i)=>url('hero_'+i)));data.data[0].general_avatar.push(url('ignored_second'));
   const resolver=await preparePortraitResolver(data,base,{concurrency:100,maxImages:100,fetchImpl:async value=>{calls++;seen.push(value);active++;peak=Math.max(peak,active);await new Promise(resolve=>setTimeout(resolve,2));active--;return new Response(png)}});
-  assert.equal(calls,20);assert(peak<=3);assert(!seen.includes(url('ignored_second')));assert.equal(resolver.imageForGeneral(url('hero_20')),null);
+  assert.equal(calls,10);assert(peak<=3);assert(!seen.includes(url('ignored_second')));assert.equal(resolver.imageForGeneral(url('hero_10')),null);assert.deepEqual(seen,Array.from({length:10},(_,i)=>url('hero_'+i)));
   calls=0;await preparePortraitResolver(recent([url('same'),url('same')]),base,{fetchImpl:async()=>{calls++;return new Response(png)}});assert.equal(calls,1);
   await preparePortraitResolver({...recent([url('not_recent')]),kind:'assets'},base,{fetchImpl:()=>assert.fail('non-recent fetched')});
 });
