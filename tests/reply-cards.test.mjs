@@ -19,10 +19,10 @@ const kinds={
 test('生产 builder 为所有标准动态场景生成原生卡，资产11图标与0保留',async()=>{
   const build=createReplyCardBuilder({root});
   for(const [kind,data] of Object.entries(kinds)){
-    const cards=await build({type:'personal',result:{kind,protocol:'app-qr-v1',data},params:{command:kind==='winRate'?'势周瑜胜率':undefined}});
+    const cards=await build({type:'personal',result:{kind,protocol:'app-qr-v1',data},params:{command:kind==='winRate'?'势周瑜胜率':undefined,...(kind==='winRate'?{general:'势周瑜',gameMode:'排位赛',model:1}:{})}});
     assert(cards.length>0);assert(cards.every(card=>typeof card.svg==='string'&&card.private===true&&!Object.hasOwn(card,'html')));
     if(kind==='assets'){const svg=cards.map(card=>card.svg).join('');assert.equal((svg.match(/<image /g)||[]).length,11);assert.match(svg,/>0<\/tspan>/);}
-    if(kind==='winRate')assert.match(cards[0].svg,/#sgs势周瑜胜率 导出/);
+    if(kind==='winRate')assert.match(cards[0].svg,/#sgs势周瑜胜率 排位赛 导出/);
   }
   const publicCards=await build({type:'public',result:{name:'关羽',skills:[{name:'武圣',description:'合成测试'}]},params:{command:'武将'}});
   assert(publicCards.every(card=>card.private===false&&card.svg));

@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {SanguoshaMobile} from '../api.mjs';
 import {CommunityAuthError} from '../lib/community-auth.mjs';
-import {parseCommand} from '../lib/commands.mjs';
+import {parseCommand,parseWinRateArgs,parseGameplayArgs} from '../lib/commands.mjs';
 
 const owner='100000001',other='100000002',privateEvent={owner,privateChat:true,imageReply:true};
 const session={protocol:'app-qr-v1',scope:'sanguosha-community',gameVersion:'sanguosha-mobile',token:'synthetic-session'};
@@ -59,16 +59,79 @@ test('胜率文字与脱敏导出后缀兼容连写形式，只导出选定统�
   assert.deepEqual(fs.readFileSync(path.join(root,'data/sessions.enc.json')),before);
 }));
 
-test('群聊、混合上下文、其他QQ和关闭个人查询都先拒绝，不调用API或修改授权',()=>workspace(async(bot,calls,root)=>{
+test('群聊可展示自己的统计，其他QQ、群导出和关闭个人查询先拒绝且授权不变',()=>workspace(async(bot,calls,root)=>{
   const before=fs.readFileSync(path.join(root,'data/sessions.enc.json'));
-  for(const body of ['胜率','势周瑜胜率','武将势周瑜胜率','胜率 势周瑜 导出']){
-    for(const context of [{group_id:'200000001'},{privateChat:false},{isGroup:true}])assert.match((await bot.handle({...privateEvent,...context,text:'#sgs'+body})).text,/私聊/);
+  for(const body of ['胜率','势周瑜胜率','武将势周瑜胜率']){
+    for(const context of [{group_id:'200000001'},{privateChat:false},{isGroup:true}]){
+      const result=await bot.handle({...privateEvent,...context,text:'#sgs'+body});
+      assert.equal(result.card.private,true);assert.deepEqual(result.card.share,{scope:'own-gameplay',owner});
+      assert.equal(result.card.result.kind,'winRate');assert.doesNotMatch(result.text,/导出|来源：/);
+    }
     assert.match((await bot.handle({...privateEvent,owner:other,text:'#sgs'+body})).text,/请先.*社区授权/);
   }
+  calls.length=0;
+  for(const body of ['胜率 导出','胜率 势周瑜 导出','势周瑜胜率 排位 导出'])assert.match((await bot.handle({...privateEvent,group_id:'200000001',text:'#sgs'+body})).text,/导出.*私聊/);
+  assert.match((await bot.handle({...privateEvent,user_id:other,group_id:'200000001',text:'#sgs胜率'})).text,/请先.*社区授权/);
   fs.writeFileSync(bot.config.file,JSON.stringify({...bot.config.read(),personalDataEnabled:false}));
   assert.match((await bot.handle({...privateEvent,text:'#sgs胜率'})).text,/管理员已关闭/);
   assert.match((await bot.handle({...privateEvent,text:'#sgs势周瑜胜率'})).text,/管理员已关闭/);
   assert.equal(calls.length,0);assert.deepEqual(fs.readFileSync(path.join(root,'data/sessions.enc.json')),before);
+}));
+
+test('模式名、数字及胜率连写统一解析，派生名称不包含模式词',()=>{
+  const names=['全部','排位','身份','国战','斗地主'];
+  for(const [model,mode] of names.entries()){
+    for(const body of ['势周瑜胜率'+mode,'势周瑜 胜率 '+mode,'胜率 势周瑜 '+mode,'武将势周瑜胜率 '+mode,'武将胜率 势周瑜 '+mode]){
+      const parsed=parseCommand(body);assert.equal(parsed.cmd,'胜率');
+      const args=parseWinRateArgs(parsed.arg);assert.equal(args.name,'势周瑜');assert.equal(args.model,model);assert.equal(args.modeExplicit,true);
+    }
+    assert.equal(parseWinRateArgs(mode).model,model);assert.equal(parseWinRateArgs(String(model)).model,model);
+  }
+  assert.equal(parseWinRateArgs('势·周瑜 排位 导出').exportJson,true);
+  assert.deepEqual(parseGameplayArgs('身份 2',{recent:true,modeAllowed:true}),{model:2,gameMode:'身份场',page:2,exportJson:false});
+  for(const body of ['势周瑜 排位 身份','势周瑜 123456','@100000002','势\n周瑜','势周瑜 排位 导出 更多'])assert.throws(()=>parseWinRateArgs(body));
+});
+
+test('武将模式过滤与近20场API模式一致，无空格排位也可用',()=>workspace(async(bot,calls)=>{
+  for(const body of ['势周瑜胜率排位','势周瑜胜率 排位','胜率 势周瑜 排位','武将势周瑜胜率 1']){
+    calls.length=0;const result=await bot.handle({...privateEvent,text:'#sgs'+body});
+    assert.equal(result.card.params.model,1);assert.equal(result.card.params.gameMode,'排位赛');assert.equal(result.card.params.name,'势周瑜');
+    assert.deepEqual(result.card.result.data.generals.map(row=>row.mode),['rank']);
+    assert.deepEqual(calls,[{kind:'bestGeneral',params:{}},{kind:'records',params:{model:1}}]);
+  }
+  calls.length=0;const overview=await bot.handle({...privateEvent,text:'#sgs胜率 排位'});
+  assert.deepEqual(overview.card.result.data.entries.map(row=>row.label),['排位胜率','近20场胜率（排位赛）']);
+  assert.deepEqual(calls,[{kind:'gameInfo',params:{}},{kind:'records',params:{model:1}}]);
+  assert.match((await bot.handle({...privateEvent,text:'#sgs势周瑜胜率 国战'})).text,/未返回.*国战.*未说明模式/);
+}));
+
+test('群内本人战绩等只传递已选择游戏统计，敏感查询和所有导出保持私聊',()=>workspace(async(bot,calls)=>{
+  const sensitive={nick:'private-nick',nick_name:'private-name',token:'private-token',uid:999999999,unknown:{secret:'private-secret'},phone:'private-phone'};
+  const fixtures={records:{...records,...sensitive},recent:[{Model:'排位赛',begin_time:'合成时间',result:'胜利',general_avatar:[],...sensitive}],force:{game_total:8,game_win:4,win_rate:50,official:'大将军',...sensitive},abilities:{rank:{score:10,...sensitive},...sensitive},bestGeneral:{...bestGeneral,...sensitive}};
+  bot.auth.queryOwn=async(kind,current,params)=>{assert.deepEqual(current,session);calls.push({kind,params});return envelope(kind,kind==='gameInfo'?gameInfo:fixtures[kind]);};
+  for(const body of ['战绩 排位','近期战绩 身份 2','将力','能力','擅长武将']){
+    for(const suffix of ['', ' 文字']){
+      const result=await bot.handle({...privateEvent,user_id:owner,group_id:'200000001',text:'#sgs'+body+suffix});
+      assert.equal(result.file,undefined);assert.doesNotMatch(JSON.stringify(result),/private-nick|private-name|private-token|private-secret|private-phone|999999999/);
+      assert.doesNotMatch(result.text,/导出|JSON|来源：/);
+      if(!suffix){assert.equal(result.card.private,true);assert.deepEqual(result.card.share,{scope:'own-gameplay',owner});}
+      else assert.equal(result.card,undefined);
+    }
+  }
+  calls.length=0;
+  for(const body of ['资产','个人资料','游戏资料','皮肤','武将收藏','账户','社区授权','扫码状态','退出授权','绑定 官号 123456','解绑','胜率 导出','战绩 1 导出','近期战绩 1 1 导出','将力 导出','能力 导出','擅长武将 导出','战绩 1 100000002','近期战绩 1 2 100000002','将力 100000002']){
+    const result=await bot.handle({...privateEvent,group_id:'200000001',text:'#sgs'+body});assert.equal(result.card,undefined);assert.equal(result.file,undefined);
+  }
+  assert.equal(calls.length,0);
+}));
+
+test('群文字长度不足或空统计不会自动导出文件或声称已生成JSON',()=>workspace(async(bot)=>{
+  fs.writeFileSync(bot.config.file,JSON.stringify({...bot.config.read(),maxReplyChars:500,maxItems:20}));
+  bot.auth.queryOwn=async kind=>envelope(kind,kind==='recent'?Array.from({length:25},()=>({Model:'合成模式'.repeat(40),begin_time:'合成时间'.repeat(40),result:'合成结果'.repeat(40)})):{});
+  for(const body of ['战绩','将力','能力','擅长武将','近期战绩']){
+    const result=await bot.handle({...privateEvent,group_id:'200000001',text:'#sgs'+body+' 文字'});
+    assert.equal(result.file,undefined);assert.equal(result.card,undefined);assert(result.text.length<=500);assert.doesNotMatch(result.text,/JSON|导出|已生成.*文件/);
+  }
 }));
 
 test('胜率后缀不改变既有账户命令边界，不能借重叠名称启动授权或写账号',()=>workspace(async(bot,calls,root)=>{

@@ -53,9 +53,9 @@ test('25 generals continue on a second SVG while all names occur exactly once an
 });
 
 test('source-confirmed mode fields preserve zero values and official percentage scale, with conservative result codes',()=>{
-  const cards=buildNativeRecordCards(result({...statistics,paiweiRate:{total:0,total_rate:.5},g20:[0,1,2,.5,null,'0','1']}),{prefix:'#移动',model:2});
+  const cards=buildNativeRecordCards(result({...statistics,paiweiRate:{total:0,total_rate:.5},g20:[0,1,2,.5,null,'0','1']}),{prefix:'#移动',model:0});
   const values=textContents(allSvg(cards));
-  for(const value of ['排位赛','身份场','国战','斗地主','0.5%','主公胜率','忠臣胜率','反贼胜率','内奸胜率','野心家胜率','地主胜率','农民胜率','排位赛最高段位 · 大师','更多字段：#移动战绩 2 导出'])assert.ok(values.includes(value),value);
+  for(const value of ['排位赛','身份场','国战','斗地主','0.5%','主公胜率','忠臣胜率','反贼胜率','内奸胜率','野心家胜率','地主胜率','农民胜率','排位赛最高段位 · 大师','更多字段：#移动战绩 0 导出'])assert.ok(values.includes(value),value);
   assert.equal(values.filter(value=>value==='胜').length,2);assert.equal(values.filter(value=>value==='负').length,2);assert.equal(values.filter(value=>value==='未知').length,3);
   assert.ok(values.includes('0'));assert.ok(values.includes('0%'));assert.equal(values.includes('50%')&&values.includes('0.5%'),true);
   assert.doesNotMatch(allSvg(cards),/拥有武将|MVP/);
@@ -146,7 +146,14 @@ test('portrait bytes are bounded per page and a large result is explicitly excer
   assert.equal((cards[0].svg.match(/<image\b/g)||[]).length,8);assert.ok(Buffer.byteLength(cards[0].svg)<=4*1024*1024);
   const data={g20:Array.from({length:161},()=>0),recent:recent(25)},limited=buildNativeRecordCards(result(data));
   assert.equal(limited.length,8);
-  for(const card of limited){assert.match(card.svg,/节选前 8 页（本次共 10 页）；完整资料请导出/);assert.match(card.svg,/#sgs战绩 0 导出/);}
+  for(const card of limited){assert.match(card.svg,/节选前 8 页（本次共 10 页）；完整资料请私聊导出/);assert.match(card.svg,/#sgs战绩 0 导出/);}
+});
+
+test('选定模式只显示该模式统计，身份与国战总胜率未返回时明确标注',()=>{
+ const data={paiweiRate:{total:10,total_rate:60},shenfenRate:{emperor_rate:20},guozhanRate:{wei_rate:30},doudizhuRate:{lord_rate:40},medals:{chuanshuo:1},g20:[0,1]};
+ const r={...result(data),winRateSummary:{kind:'winRate',protocol:'app-qr-v1',data:{entries:[{label:'身份场胜率',value:'未返回',detail:'官方未提供身份场总场次'}]}}};
+ const svg=allSvg(buildNativeRecordCards(r,{model:2,groupShare:true}));
+ assert.match(svg,/身份场胜率/);assert.match(svg,/发送者本人战绩 · 群内展示/);assert.doesNotMatch(svg,/排位赛最高段位|地主胜率|魏国胜率/);
 });
 
 test('aggregate portrait dimension metadata stays within the native decoder pixel budget',()=>{

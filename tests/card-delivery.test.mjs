@@ -45,3 +45,25 @@ test('后页失败明确保留已发送页数，第一页失败则保留原错�
  await assert.rejects(sendCardReply({card:{private:true}},{...options,render:async()=>{throw failure}}),error=>error===failure);
  assert.equal(output.length,1);
 });
+
+test('群只发送已标记的本人战绩卡，仍使用私密渲染且拒绝跨用户和资产卡',async()=>{
+ const event={group_id:'synthetic-group',user_id:'synthetic-owner',reply:async()=>true};
+ const result={card:{type:'personal',private:true,result:{kind:'winRate'},share:{scope:'own-gameplay',owner:'synthetic-owner'}}};
+ let built=0,rendered=0;
+ const options={event,buildCards:async()=>{built++;return [{svg:'synthetic'}]},render:async card=>{assert.equal(card.private,true);rendered++;return Buffer.from('image')},image:bytes=>bytes};
+ assert.equal(await sendCardReply(result,options),true);assert.equal(rendered,1);
+ for(const card of [
+  {...result.card,share:{scope:'own-gameplay',owner:'another-owner'}},
+  {...result.card,result:{kind:'assets'}},
+  {...result.card,share:undefined},
+  {...result.card,private:false},
+ ])await assert.rejects(sendCardReply({card},options),/PRIVATE_CARD_ONLY|INVALID_PERSONAL_CARD/);
+ assert.equal(built,1);
+ await assert.rejects(sendCardReply(result,{...options,event:{privateChat:false,user_id:'synthetic-owner'}}),/PRIVATE_CARD_ONLY/);
+});
+test('QQ失败回执不记为成功，已成功页数准确保留',async()=>{
+ const options={buildCards:()=>[{svg:'one'},{svg:'two'}],render:async()=>Buffer.from('image'),image:bytes=>bytes};
+ for(const receipt of [false,{error:'synthetic'},{retcode:100},{discarded:true},{status:'failed'}])await assert.rejects(sendCardReply({card:{private:false}},{...options,event:{reply:async()=>receipt}}),/CARD_IMAGE_SEND_FAILED/);
+ let calls=0;
+ await assert.rejects(sendCardReply({card:{private:false}},{...options,event:{reply:async()=>++calls===1?{message_id:1}:false}}),error=>error instanceof CardReplyError&&error.sent===1&&error.total===2);
+});

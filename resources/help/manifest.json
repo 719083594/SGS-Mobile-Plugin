@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "hashAlgorithm": "sha256-lf-v1",
+  "prefix": "#sgs",
+  "cards": {
+    "sgs-official-login": [
+      {
+        "file": "resources/help/sgs-official-login-1.jpg",
+        "sha256": "b50759956538fecb26cbac17b47d32cc135ca85229d63f792dbe4aad7e9b923b",
+        "width": 1080,
+        "height": 753
+      }
+    ],
+    "sgs-huawei-login": [
+      {
+        "file": "resources/help/sgs-huawei-login-1.jpg",
+        "sha256": "8eb3b606569ecb734cc97d6cd43d3d769ff46541b8304ccc913967e6b58a71f3",
+        "width": 1080,
+        "height": 753
+      }
+    ],
+    "sgs-features": [
+      {
+        "file": "resources/help/sgs-features-1.jpg",
+        "sha256": "da7b3eb8af352bfcc9aa1440170eb80f2c027d20391f6e31f3f98925cacaee54",
+        "width": 1080,
+        "height": 1176
+      }
+    ]
+  },
+  "sources": [
+    {
+      "file": "lib/help-content.mjs",
+      "sha256": "647f5110b92fcc676557ec83e5381ce07b1e851679a90bebc6c40f2f62979b70"
+    }
+  ]
+}

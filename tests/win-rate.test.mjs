@@ -62,9 +62,31 @@ test('相同模式相同统计可去重，不改变输入',()=>{
 test('优先擅长列表，近期使用统计仅在擅长列表未命中时回退',()=>{
   const recent=records({recent:[{general:100,name:'势·周瑜',win_num:3,num:4,win_rate:75,general_score:10000,phone:'synthetic-phone'}]});
   const result=buildGeneralWinRate('势周瑜',{records:recent});assert.equal(result.data.generals[0].value,'75%');
-  assert.equal(result.data.scope,'官方近期使用武将统计（统计周期未标明）');assert.match(result.data.notice,/不能视作近20局或完整生涯/);
+  assert.equal(result.data.scope,'官方近期使用武将统计（统计周期及模式未标明）');assert.match(result.data.notice,/不能视作近20局、指定模式或完整生涯/);
   assert.doesNotMatch(JSON.stringify(result),/10000|synthetic|phone|general_score/);
   const chosen=buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{Id:100,name:'势周瑜',win:1,total:4}]},records:recent});assert.equal(chosen.data.generals[0].value,'25%');
+});
+
+test('指定模式仅展示该模式，不混入总胜率或其他模式；身份国战不猜缺失场次',()=>{
+  const gameInfo={totalWin:5,totalGame:10,rankWin:2,rankNum:3,douDiZhuWin:1,douDiZhuTotal:4,identity:80,identityWin:70,null:1};
+  for(const [model,label,expected] of [[1,'排位胜率','66.67%'],[2,'身份场胜率','未返回有效统计'],[3,'国战胜率','未返回有效统计'],[4,'斗地主胜率','25%']]){
+    const result=buildWinRateOverview({gameInfo,records:{g20:[0,1]}},{model});
+    assert.deepEqual(result.data.entries.map(row=>row.label),[label,'近20场胜率（'+result.data.gameMode+'）']);
+    assert.equal(result.data.entries[0].value,expected);assert.match(result.data.scope,new RegExp(result.data.gameMode));
+    assert.equal(result.data.model,model);
+  }
+});
+
+test('指定武将模式缺失时不从其他模式或模式未标明的近期统计回填',()=>{
+  const input={bestGeneral:{rank:[{Id:100,name:'势·周瑜',win:1,total:4}],identity:[{Id:100,name:'势周瑜',win:9,total:10}]},records:{recent:[{general:100,name:'势周瑜',win_num:3,num:4,win_rate:75}]}};
+  for(const [model,value] of [[1,'25%'],[2,'90%']]){
+    const result=buildGeneralWinRate('势周瑜',input,{model});assert.equal(result.data.generals.length,1);assert.equal(result.data.generals[0].value,value);assert.equal(result.data.model,model);
+    assert.match(formatWinRate(result).text,new RegExp(result.data.gameMode+' 导出'));
+  }
+  for(const model of [3,4])throwsCode(()=>buildGeneralWinRate('势周瑜',input,{model}),'GENERAL_STATS_NOT_RETURNED');
+  throwsCode(()=>buildGeneralWinRate('势周瑜',input,{model:5}),'INVALID_MODEL');
+  const selected=buildGeneralWinRate('势周瑜',{bestGeneral:{rank:[{Id:100,name:'势周瑜',win:1,total:4}],identity:[{Id:200,name:'势周瑜',win:9,total:10}]}},{model:1});
+  assert.equal(selected.data.generals[0].id,100);
 });
 
 test('近期统计必须同时通过非负整数、胜场范围及百分比一致性检查',()=>{
