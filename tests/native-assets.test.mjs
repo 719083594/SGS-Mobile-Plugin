@@ -1,0 +1,120 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+import {deflateSync} from 'node:zlib';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {createAssetResolver} from '../lib/ui-assets.mjs';
+import {createNativePortraitResolver} from '../lib/native-assets.mjs';
+import {buildNativeRecordCards} from '../lib/native-records.mjs';
+
+function chunk(type,data){
+  const body=Buffer.concat([Buffer.from(type),data]);let crc=0xffffffff;
+  for(const value of body){crc^=value;for(let bit=0;bit<8;bit++)crc=crc&1?0xedb88320^(crc>>>1):crc>>>1;}
+  const size=Buffer.alloc(4),sum=Buffer.alloc(4);size.writeUInt32BE(data.length);sum.writeUInt32BE((crc^0xffffffff)>>>0);
+  return Buffer.concat([size,body,sum]);
+}
+const header=Buffer.alloc(13);header.writeUInt32BE(1);header.writeUInt32BE(1,4);header[8]=8;header[9]=6;
+const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(Buffer.from([0,170,120,50,255]))),chunk('IEND',Buffer.alloc(0))]);
+const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+function fixture(t){
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sgs-native-assets-')),directory=path.join(root,'resources/ui/assets');
+  fs.mkdirSync(directory,{recursive:true});t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const file=path.join(directory,'general-1.png'),manifest=path.join(directory,'manifest.json');
+  const entry={kind:'official-artwork',category:'general',name:'刘备',id:1,url:'https://www.sanguosha.cn/storage/uploads/images/pic_index/1.png',file:path.basename(file),bytes:png.length,sha256:digest(png)};
+  fs.writeFileSync(file,png);
+  const save=()=>fs.writeFileSync(manifest,JSON.stringify({schema:1,entries:[entry]}));save();
+  return {root,directory,file,manifest,entry,save};
+}
+
+test('public exact name resolves to canonical PNG data without a network or account dependency',t=>{
+  t.mock.method(globalThis,'fetch',()=>assert.fail('Public asset reader must never use a network'));
+  const f=fixture(t),base=createAssetResolver(f.root),resolver=createNativePortraitResolver({root:f.root,assetResolver:base});
+  const expected='data:image/png;base64,'+png.toString('base64');
+  assert.equal(resolver.imageForGeneral('刘备'),expected);assert.equal(resolver.imageForGeneral(' 刘备 '),expected);
+  assert.equal(Buffer.from(expected.split(',')[1],'base64').toString('base64'),expected.split(',')[1]);
+  assert(Object.isFrozen(resolver));assert.deepEqual(fs.readdirSync(f.directory).sort(),['general-1.png','manifest.json']);
+  assert.equal(createNativePortraitResolver({root:f.root}).imageForGeneral('刘备'),expected);
+});
+
+test('unknown names, game IDs, URLs and private paths do not become public catalog names',t=>{
+  const f=fixture(t),resolver=createNativePortraitResolver({root:f.root});
+  for(const name of ['曹操','1',1,null,{},'../private.png','C:\\private.png','https://sjpubicres.sanguosha.cn/release/character_heads/private.png','file:///etc/passwd','data:image/png;base64,AA==','刘备\0','A'.repeat(101)])assert.equal(resolver.imageForGeneral(name),null);
+});
+
+test('injected resolver cannot escape the direct fixed directory or bypass canonical URL checks',t=>{
+  const f=fixture(t),good=pathToFileURL(f.file).href;
+  const urls=[null,{},'https://evil.invalid/a.png',good+'?token=synthetic',good+'#fragment',good.replace('general-1','general%2D1'),pathToFileURL(path.join(f.root,'private.png')).href,pathToFileURL(path.join(f.directory,'nested','general-1.png')).href,'file://evil.invalid/private.png','data:image/png;base64,'+png.toString('base64')];
+  for(const url of urls){const resolver=createNativePortraitResolver({root:f.root,assetResolver:{imageForGeneral:()=>url}});assert.equal(resolver.imageForGeneral('刘备'),null);}
+  assert.equal(createNativePortraitResolver({root:f.root,assetResolver:{imageForGeneral(){throw new Error('synthetic private value');}}}).imageForGeneral('刘备'),null);
+});
+
+test('modified or missing portrait and manifest fail closed, even with a previously valid resolver',t=>{
+  const f=fixture(t),resolver=createNativePortraitResolver({root:f.root});
+  assert(resolver.imageForGeneral('刘备'));fs.writeFileSync(f.file,Buffer.alloc(png.length));assert.equal(resolver.imageForGeneral('刘备'),null);
+  fs.writeFileSync(f.file,png);assert(resolver.imageForGeneral('刘备'));fs.writeFileSync(f.manifest,'{}');assert.equal(resolver.imageForGeneral('刘备'),null);
+  f.save();assert(resolver.imageForGeneral('刘备'));fs.unlinkSync(f.file);assert.equal(resolver.imageForGeneral('刘备'),null);
+});
+
+test('oversized image, changed hashes, SVG and extension-mismatched magic cannot be embedded',t=>{
+  const f=fixture(t);
+  for(const bytes of [Buffer.alloc(256*1024+1),Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><image href="https://evil.invalid"/></svg>'),Buffer.from([255,216,255,217])]){
+    fs.writeFileSync(f.file,bytes);f.entry.bytes=bytes.length;f.entry.sha256=digest(bytes);f.save();
+    assert.equal(createNativePortraitResolver({root:f.root}).imageForGeneral('刘备'),null);
+  }
+  fs.writeFileSync(f.file,png);f.entry.bytes=png.length;f.entry.sha256='0'.repeat(64);f.save();
+  assert.equal(createNativePortraitResolver({root:f.root}).imageForGeneral('刘备'),null);
+});
+
+test('hard links and a symlinked parent are rejected after prior successful reads',t=>{
+  const f=fixture(t),resolver=createNativePortraitResolver({root:f.root});assert(resolver.imageForGeneral('刘备'));
+  const link=path.join(f.root,'shared.png');fs.linkSync(f.file,link);assert.equal(resolver.imageForGeneral('刘备'),null);fs.unlinkSync(link);
+  assert(resolver.imageForGeneral('刘备'));fs.renameSync(f.directory,f.directory+'-original');
+  fs.symlinkSync(f.directory+'-original',f.directory,process.platform==='win32'?'junction':'dir');
+  assert.equal(resolver.imageForGeneral('刘备'),null);
+});
+
+test('leaf symlinks are rejected without reading their targets',t=>{
+  const f=fixture(t),resolver=createNativePortraitResolver({root:f.root}),target=path.join(f.root,'target.png');
+  fs.renameSync(f.file,target);
+  try{fs.symlinkSync(target,f.file,'file');}catch(error){
+    if(!['EPERM','EACCES'].includes(error.code))throw error;
+    // Windows may deny creating file symlinks. The real directory junction is
+    // exercised above; here simulate the precise native leaf lstat boundary.
+    t.diagnostic('File symlink creation denied; native leaf guard checked with a simulated lstat.');
+    fs.renameSync(target,f.file);const original=fs.lstatSync;
+    t.mock.method(fs,'lstatSync',function(file,options){const stat=original.call(fs,file,options);if(file===f.file&&options?.bigint)return Object.assign(Object.create(stat),{isSymbolicLink:()=>true});return stat;});
+    assert.equal(resolver.imageForGeneral('刘备'),null);assert.deepEqual(fs.readFileSync(f.file),png);return;
+  }
+  assert.equal(resolver.imageForGeneral('刘备'),null);assert.deepEqual(fs.readFileSync(target),png);
+});
+
+test('a file changed during bounded reading is rejected by the before/after identity check',t=>{
+  const f=fixture(t),resolver=createNativePortraitResolver({root:f.root});
+  const original=fs.readSync;let changed=false;
+  t.mock.method(fs,'readSync',function(fd,buffer,...args){
+    const count=original.call(fs,fd,buffer,...args);
+    if(!changed&&buffer.length===png.length+1){changed=true;fs.writeFileSync(f.file,Buffer.alloc(png.length));}
+    return count;
+  });
+  assert.equal(resolver.imageForGeneral('刘备'),null);assert.equal(changed,true);
+});
+
+test('bundled public JPEG portraits remain canonical and respect the per-image bound',()=>{
+  const root=fileURLToPath(new URL('../',import.meta.url));
+  const manifest=JSON.parse(fs.readFileSync(path.join(root,'resources/ui/assets/manifest.json'),'utf8'));
+  const entry=manifest.entries.find(row=>row.category==='general'&&/\.jpe?g$/.test(row.file));assert(entry);
+  const value=createNativePortraitResolver({root}).imageForGeneral(entry.name);assert(value?.startsWith('data:image/jpeg;base64,'));
+  const encoded=value.split(',')[1],bytes=Buffer.from(encoded,'base64');
+  assert.equal(bytes.length,entry.bytes);assert(bytes.length<=256*1024);assert.equal(digest(bytes),entry.sha256);assert.equal(bytes.toString('base64'),encoded);
+});
+
+test('native public portrait reader interoperates with strict SVG image validation',t=>{
+  const f=fixture(t),{imageForGeneral}=createNativePortraitResolver({root:f.root});
+  const cards=buildNativeRecordCards({kind:'records',protocol:'app-qr-v1',data:{recent:[{name:'刘备'}]}},{imageForGeneral,dataAlreadyRedacted:true});
+  assert.equal(cards.length,1);assert.equal(cards[0].private,true);
+  assert.match(cards[0].svg,/<image\b/);assert(cards[0].svg.includes(imageForGeneral('刘备')));
+  assert.doesNotMatch(cards[0].svg,/href="(?:file:|https?:)/);
+});
