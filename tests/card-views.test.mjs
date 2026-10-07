@@ -20,7 +20,8 @@ const resolver = {
 test('help is an inert compact mobile-version card with all standalone commands and channel limits', () => {
   const card = buildHelpCard({ prefix: '#移动' });
   assert.equal(card.width, 1080);
-  for (const text of ['资讯', '活动', '公告', '武将', '攻略', '模式', '详情', '社区', '热榜', '个人资料', '将力', '游戏资料', '能力', '战绩', '近期战绩', '资产', '皮肤', '武将收藏', '擅长武将', '导出', '社区授权', '扫码状态', '退出授权', '账户', '解绑', '官号登录', '华为登录', '绑定', '功能', '状态', '#移动帮助']) assert.ok(card.html.includes(text), text);
+  for (const text of ['资讯', '活动', '公告', '武将', '攻略', '模式', '详情', '社区', '热榜', '个人资料', '将力', '游戏资料', '能力', '战绩', '近期战绩', '资产', '皮肤', '武将收藏', '擅长武将', '导出', '#移动登录', '扫码状态', '授权状态', '取消授权', '退出授权', '账户', '解绑', '官号登录', '华为登录', '绑定', '功能', '状态', '#移动帮助']) assert.ok(card.html.includes(text), text);
+  assert.doesNotMatch(card.html, /新版授权|新版扫码状态|取消新版授权|APP 扫码/);
   assert.match(card.html, /官号、华为游戏登录尚未接通/);
   assert.match(card.html, /绑定只记录身份/);
   assert.match(card.html, /签到、点赞、分享、兑换与领奖均不提供执行入口/);

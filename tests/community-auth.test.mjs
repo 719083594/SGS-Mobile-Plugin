@@ -50,6 +50,7 @@ test('modern scanner exchanges official ticket and validates WEB_SESSIONID befor
   const result = await client.poll(challenge);
   assert.equal(result.status, 'authorized'); assert.equal(result.gameAuthenticated, false);
   assert.equal(result.session.token, 'Bearer test-session');
+  assert.equal(result.session.communityUserId, '123'); assert.equal(result.communityUserId, '123');
   assert.equal(JSON.parse(calls[2].init.body).ticket, 'test-ticket');
 });
 
