@@ -8194,104 +8194,263 @@
       "bytes": 977,
       "sha256": "08b64e8b33a9badc56118f28c7c9b3f7badf8a45ec03cc33f5c9422c570a8019",
       "rights": "Original vector illustration for this plugin; GPL-3.0-or-later."
-    }
-  ],
-  "missing": [
+    },
     {
+      "kind": "official-artwork",
       "id": 412,
       "name": "华歆",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/570.jpg",
-      "reason": "not-bundled"
+      "file": "general-412.png",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 20682,
+      "width": 88,
+      "height": 88,
+      "sha256": "ec16c3c4251ffc8df64bc3669eb68eaf439bb28a53554c3898de9c3a2d39cb7b",
+      "sourceSha256": "d687625ae126fd0edd0d57e818968a3f0b4ff6084ab74172234c90bce9cbc53e",
+      "sourceBytes": 359841,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 553,
       "name": "界·张嶷",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/685.jpg",
-      "reason": "not-bundled"
+      "file": "general-553.png",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 20761,
+      "width": 88,
+      "height": 88,
+      "sha256": "6735f872169bd191b8af2e836af065ddd0c07e6f1be4bd313b31ae884def2541",
+      "sourceSha256": "4c4caec2636a0b167ac535b4dbb9b0056905059096efdb912db3e1aab0ebfd84",
+      "sourceBytes": 290626,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 554,
       "name": "十常侍",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/730.jpg",
-      "reason": "not-bundled"
+      "file": "general-554.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 7654,
+      "width": 88,
+      "height": 88,
+      "sha256": "8471507e06ec48a755f913cf90d2e8a877b22a4034a32e5666ac7971a8d4e65d",
+      "sourceSha256": "28311837ca88768868255da5becb4b03b086fe1cd71e2f3eb4ae52c3dde175b5",
+      "sourceBytes": 473660,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 555,
       "name": "杨阜",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/612.jpg",
-      "reason": "not-bundled"
+      "file": "general-555.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 5865,
+      "width": 88,
+      "height": 88,
+      "sha256": "39e9158b940fd4b6b4bd626c71550603ea7e1735d4f069ca7a36676c40540417",
+      "sourceSha256": "14fd5ba8231524d7459ddde171d448db12dace3960c0194cb6f09ff42677c904",
+      "sourceBytes": 379513,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 556,
       "name": "谋·大乔",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/667.jpg",
-      "reason": "not-bundled"
+      "file": "general-556.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 6496,
+      "width": 88,
+      "height": 88,
+      "sha256": "acbcdd0b6d2abbf909fb28611506a9eef54933a4cd35bac8951ae855944ee7e3",
+      "sourceSha256": "a70dfb97f80d7cc4f69daf173b0c224fcd8e3c1118a9ce87651b658f6bda9c33",
+      "sourceBytes": 753551,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 557,
       "name": "谋·孟获",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/695.jpg",
-      "reason": "not-bundled"
+      "file": "general-557.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 6204,
+      "width": 88,
+      "height": 88,
+      "sha256": "4fec17f1dccc54298663245d2a71fe51a8660ff3802a7e68ec6cfe216ee66e8f",
+      "sourceSha256": "0185f43b4b8f0500c08f3457d5e5149ac59fe1085aad5f7b37f41a3caee8e612",
+      "sourceBytes": 1119801,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 558,
       "name": "牵招",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/751.jpg",
-      "reason": "not-bundled"
+      "file": "general-558.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 6147,
+      "width": 88,
+      "height": 88,
+      "sha256": "c38b3b7c4a2ef399deb6086c862eefd75e442416435b176f25c36c6f8126a406",
+      "sourceSha256": "537c85ae7404aeeecef9e75cb25b52eaa55b187b86cd8774d40f1da496862d7f",
+      "sourceBytes": 1181358,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 559,
       "name": "濮阳兴",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/618.jpg",
-      "reason": "not-bundled"
+      "file": "general-559.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 5969,
+      "width": 88,
+      "height": 88,
+      "sha256": "f87726ea4455519df7ff08250a1ec4b974229c5e1579cf0458922698444159a8",
+      "sourceSha256": "efb57728deeffbcd0de0c1c03349cb8bf93ca75015a9c5ccbbf96c754697aa30",
+      "sourceBytes": 559944,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 560,
       "name": "界·曹休",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/682.jpg",
-      "reason": "not-bundled"
+      "file": "general-560.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 5357,
+      "width": 88,
+      "height": 88,
+      "sha256": "7476e2269322c40637e869a7bfbe0331d6d5fa0420cc4696db3a2a54964174e7",
+      "sourceSha256": "5a8b446435b28c542923482bca19395fed6f3e21c30f5328e209e069165c6c2b",
+      "sourceBytes": 265107,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 562,
       "name": "郭女王",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/753.jpg",
-      "reason": "not-bundled"
+      "file": "general-562.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 7450,
+      "width": 88,
+      "height": 88,
+      "sha256": "cdef7551824f545ffa32d2e4efe8702f5e2a3780f493f8bb98b2010aa615c691",
+      "sourceSha256": "7f1085a8f936085433c047b80847b7bbe0b9e8e92a3e858c5c3f3233295543f9",
+      "sourceBytes": 397799,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 563,
       "name": "星·魏延",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/619.jpg",
-      "reason": "not-bundled"
+      "file": "general-563.png",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 21739,
+      "width": 88,
+      "height": 88,
+      "sha256": "2616522cead2b2ec16f38c98dc50f2eb4d42564c73810da615566fe2a3e3c407",
+      "sourceSha256": "7f321b1d2823db4074317aa67ea33ec2dfbdcf23b47f82c2c9e0190c4a416d60",
+      "sourceBytes": 2298294,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 564,
       "name": "界·朱桓",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/684.jpg",
-      "reason": "not-bundled"
+      "file": "general-564.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 4899,
+      "width": 88,
+      "height": 88,
+      "sha256": "5ed03fc70b907a0340e24a84472bbe7e0d00e207196bb3c8633205b863101b2e",
+      "sourceSha256": "b5f199c57b194c4938a1cdacfc1519f3d46b2652eb6623b9a39177fbd8d2dff9",
+      "sourceBytes": 417694,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 565,
       "name": "谋·祝融",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/714.jpg",
-      "reason": "not-bundled"
+      "file": "general-565.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 5986,
+      "width": 88,
+      "height": 88,
+      "sha256": "9e1d3471efecf487aa768fc1005cbd5526aec6556ac8b4586259d48c617ef32a",
+      "sourceSha256": "0534aa57e14ae57b26394dd9e486061a33810db106fdf5537662b6667c270e6f",
+      "sourceBytes": 923382,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 566,
       "name": "阎象",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/755.jpg",
-      "reason": "not-bundled"
+      "file": "general-566.png",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 19538,
+      "width": 88,
+      "height": 88,
+      "sha256": "c7e174b1a6326261b22beb66073e0a47b580b4a693262e92e4524a4be1772e06",
+      "sourceSha256": "96f4d5aa7cd80912c1a79dd500b9e1f2e8848145c81d18d2b44f14d4df53af95",
+      "sourceBytes": 328823,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 567,
       "name": "星·周不疑",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/760.png",
-      "reason": "not-bundled"
+      "file": "general-567.png",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 21233,
+      "width": 88,
+      "height": 88,
+      "sha256": "528d6c8889ad7abf22882aa2d31a04e34a3be7cfba7a8c1340b09c186c698e61",
+      "sourceSha256": "0de7fc215ca68cddf4cb6e4693b96a2aec1bc709d9027fac2ff378f87db1853d",
+      "sourceBytes": 787697,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     },
     {
+      "kind": "official-artwork",
       "id": 571,
       "name": "谋·诸葛亮",
       "url": "https://www.sanguosha.cn/storage/uploads/images/pic_index/668.png",
-      "reason": "not-bundled"
+      "file": "general-571.jpg",
+      "sourceUrl": "https://www.sanguosha.cn/pc/hero-list.html",
+      "category": "general",
+      "bytes": 5193,
+      "width": 88,
+      "height": 88,
+      "sha256": "bef5f88cf2637ff500ac2cc822c416d720e50149186c64a318fe79bf25307140",
+      "sourceSha256": "d165d122081155f3ab00ebbca1a3c36d0a71e5e0e311978de6dc03be42d09763",
+      "sourceBytes": 782400,
+      "rights": "Copyright remains with the original rights holders; no open artwork licence was found."
     }
-  ]
+  ],
+  "missing": []
 }

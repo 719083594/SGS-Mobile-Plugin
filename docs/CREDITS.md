@@ -12,6 +12,7 @@
 
 | 来源主机 | 接入端点 | 用途与状态 |
 | --- | --- | --- |
+| [share.sanguosha.cn](https://share.sanguosha.cn/skins/) | `GET /api/skins/list?type=1\|2\|3&page=N&limit=100` | 官方皮肤绘影堂公开展示目录；按至尊、传说、原画分类读取并校验分页，无需社区授权，不发送社区会话 |
 | [wxforum.sanguosha.cn](https://wxforum.sanguosha.cn/api/topics?page=1&category_id=0&include=user,label&has_label=0&just_video=0) | `/api/topics`、`/api/searchV2/topics`、`/api/rank/today`、`theme`、`week`、`all` | 已实测匿名读取帖子、攻略搜索、帖子/话题热度及社区人气榜；过滤无关用户/IP/地址字段 |
 | [hi-gateway.sanguosha.cn](https://hi.sanguosha.cn/pc/index.html) | `/api/login/v1/qrcode`：POST 生成、GET 查询 | 真实用户已完成三国咸话 APP 扫码，官方本人验证成功，社区会话 AES 保存 |
 | [wxforum.sanguosha.cn](https://xianhua.sanguosha.cn/) | `/api/profile`、`/api/user/getGameSummary`、`getGameForce`、`getGameRecord`、`getGameRecordList`、`/api/general/getMyLike` | APP 会话的本人社区资料、概览、将力、战绩统计/最近对局、社区收藏线上均成功返回；字段业务含义待与 APP 逐项核对 |
@@ -35,3 +36,5 @@
 游戏、社区的内容、名称、图片和标识属于对应权利人，社区投稿属于其作者。转载请遵守原站条款与作者要求；插件保留原文链接。公开来源和登录协议可能变化，接口失败时明确返回限制，不伪造个人数据或认证成功。
 
 图片界面的官方道具、武将图和静态装饰来自 `imagexh.sanguosha.com` 与移动版官网，逐项原地址、哈希、大小及原创替代图类别保存在 [素材清单](ASSETS.md) 与 `resources/ui/assets/manifest.json`。近期战绩中官方返回的武将头像仅从 `sjpubicres.sanguosha.cn/release/character_heads/` 固定目录匿名只读取得并保留在本次内存，不传社区凭据。帮助、资料卡排版、内存图片处理及五张明确标记的原创 SVG 属于本项目；官方图片权利仍归游卡及各原权利人，未宣称获得开放素材许可。
+
+公开皮肤图鉴的栅格原图来自官方皮肤绘影堂所声明的 `sjwx-oss.sanguosha.cn/skins/image/`。本插件离线制作缩略图，并在 `resources/skin-gallery/manifest.json` 保留每个官方条目 ID、名称、原图地址和缩略图哈希。头像网格、皮肤网格、势力筛选及 Bot 分页属于本项目原创实现；官方目录和图鉴范围见 [图鉴说明](CATALOG.md)。
