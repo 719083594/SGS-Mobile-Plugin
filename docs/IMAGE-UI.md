@@ -12,4 +12,6 @@ TRSS/云崽适配器默认把 `#三国帮助`、资讯/公告/活动、武将、
 
 独立 API 与 CLI 默认继续返回文字/JSON，不启动图片渲染。公开文档截图中的数字、昵称与战绩全部为合成排版示例；真实本人资料不提交 GitHub。
 
+TRSS 适配器明确选择 `loader.getRenderer('puppeteer')` 并核对实例接口，避免默认入口返回分发器而没有 `browserInit`。失败日志仅保存固定错误代码，不记录个人 HTML、原始异常正文或授权信息。
+
 预览：[帮助](previews/help.png)、[合成资产](previews/assets.png)、[合成战绩](previews/records.png)、[合成近期对局](previews/recent.png)。
