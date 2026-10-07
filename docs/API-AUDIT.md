@@ -4,6 +4,12 @@
 
 **当前结论：APP 实扫成功，线上 11 类本人接口均成功返回；官网资讯、刘备详情及 today 热榜成功。字段业务含义尚未与 APP 一一核对；官号游戏登录和华为渠道游戏登录仍未接通。** 脱敏结果见 [VERIFICATION.md](VERIFICATION.md)。以下匿名检查记录用于说明未授权时的接口边界，不代表当前本人授权仍未完成。
 
+## 本人拥有列表的覆盖边界
+
+本人收藏视图使用已核实的 `generalSkins` 与 `gameInfo`，不新增猜测的接口或参数。旧官方 `recordApi.2943a9d0.js` 的 `h5HeroSkin()` 请求 `game/v2/general/generalSkins`，没有分页参数；`obtain.cb450439.js` 在组件端用 `b<8` 限制武将展示，并从 `gameInfo.generalNum/generalTotal`、`skinNum/skinTotal` 显示统计。当前 H5、PC 和新版网页业务入口没有提供可核实的完整本人收藏列表、势力筛选或分页协议。线上只读结构核验确认本次返回条目少于拥有统计，因此 `我的武将/我的皮肤` 明确展示为部分响应，不能称为全部拥有。
+
+旧官方单将详情 `user/getGeneralInfo?general_id=…` 的页面读取 `has_general` 判断是否拥有，但这不是全量目录；本插件没有调用、遍历该新端点，也没有把官网 ID 猜成社区 ID。详情中的 `skin_info` 未有已证实的拥有判据，不能当作本人皮肤清单。
+
 ## 产品身份与社区功能
 
 - 用户指定的 <https://www.sanguosha.cn/> 页面明确标记“三国杀移动版”，发行方为杭州游卡网络技术有限公司。这是本插件唯一支持的游戏版本，不使用 OL、十周年、欢乐三国杀或台湾版接口。

@@ -2,3 +2,5 @@
 # Public help manifest fingerprints raw view source bytes.
 lib/card-views.mjs text eol=lf
 resources/ui/help.jpg binary
+# Asset manifests fingerprint the exact SVG bytes on every platform.
+resources/ui/assets/*.svg text eol=lf

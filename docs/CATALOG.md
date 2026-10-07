@@ -26,4 +26,6 @@
 
 线上查询不会下载皮肤原图。只有官方条目 ID 与原图 URL 都匹配清单，才显示已验证本地图；新条目或图源变化显示明确占位，维护者可显式运行 `node scripts/build-skin-assets.mjs` 更新公开素材。构建器和线上读取器不读取账号、Cookie 或私有配置。动态目录图片通过同级 AI-Plugin 的共享原生渲染器在内存生成。
 
-本人私聊的 `#sgs皮肤`/`#sgs我的皮肤` 使用独立的 `generalSkins` 受保护接口。它缺少已核实的完整分页和总量协议，因此不能把其中的 `generalList/skinList` 宣称为全部拥有列表。社区 `general/getMyLike` 是“我的喜欢”，不是拥有武将；不将其与公开图鉴的 ID 擅自关联。
+本人私聊的 `#sgs我的武将 [页]`、`#sgs我的皮肤 [页]` 使用独立的 `generalSkins` 受保护接口，并从 `gameInfo.generalNum/skinNum` 读取官方拥有总数。每页24项仅对本次已返回的 `generalList/skinList` 分页，不能用本地翻页获得接口未返回的条目。结果明确区分拥有总数与本次返回数量；缺少已核实的全量分页和势力字段，不能宣称全部拥有或完整本人吴国列表。`#sgs皮肤` 保留原始摘要与导出。社区 `general/getMyLike` 是“我的喜欢”，不是拥有武将；不将其与公开图鉴的 ID 擅自关联。个人条目、私密响应和渲染图只在内存处理，不打包到仓库。
+
+公开图鉴的588张武将头像与141张绘影堂皮肤缩略图均随插件保存在 `resources/ui/assets/` 和 `resources/skin-gallery/`，包含在 Git 克隆及归档中；响应期间通过本地清单校验，不临时下载原图。原创道具 SVG 使用固定 LF 换行，确保 Windows 和 Linux 的字节校验一致。

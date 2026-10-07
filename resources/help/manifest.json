@@ -22,16 +22,16 @@
     "sgs-features": [
       {
         "file": "resources/help/sgs-features-1.jpg",
-        "sha256": "0d327864d3cd2bb39fdee328e6f1edba482c1a28a1ec8f19e42eaad6ba62f3a0",
+        "sha256": "b4d1bf7e4fbc7430a78f300903d2e40ea375cafe4163f5b46c40fd34ef964337",
         "width": 1080,
-        "height": 1356
+        "height": 1417
       }
     ]
   },
   "sources": [
     {
       "file": "lib/help-content.mjs",
-      "sha256": "9657768573d9e1f8bcfcb6dc1a3da31195d9374902134ee7a59911277afe7d8f"
+      "sha256": "fd48db1e6d7fba2bbffd47f6c46b9b82dfb31cf0e4815afc138e8d47bbe8a81c"
     }
   ]
 }

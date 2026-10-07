@@ -37,4 +37,6 @@
 
 图片界面的官方道具、武将图和静态装饰来自 `imagexh.sanguosha.com` 与移动版官网，逐项原地址、哈希、大小及原创替代图类别保存在 [素材清单](ASSETS.md) 与 `resources/ui/assets/manifest.json`。近期战绩中官方返回的武将头像仅从 `sjpubicres.sanguosha.cn/release/character_heads/` 固定目录匿名只读取得并保留在本次内存，不传社区凭据。帮助、资料卡排版、内存图片处理及五张明确标记的原创 SVG 属于本项目；官方图片权利仍归游卡及各原权利人，未宣称获得开放素材许可。
 
+本人收藏由已授权的 `hi-gateway.sanguosha.cn/api/game/v2/general/generalSkins` 与 `gameInfo` 提供部分条目和独立拥有统计，不将预览误作全部拥有。本次皮肤配图来自响应中的 `sjpubicres.sanguosha.cn/release/character_skins/skins/` 官方公开资源，严格限定路径、匿名读取、只保留本次内存，不发送会话凭据。收藏数量对照、范围提示、私聊权限和分页图片视图由本项目原创实现。
+
 公开皮肤图鉴的栅格原图来自官方皮肤绘影堂所声明的 `sjwx-oss.sanguosha.cn/skins/image/`。本插件离线制作缩略图，并在 `resources/skin-gallery/manifest.json` 保留每个官方条目 ID、名称、原图地址和缩略图哈希。头像网格、皮肤网格、势力筛选及 Bot 分页属于本项目原创实现；官方目录和图鉴范围见 [图鉴说明](CATALOG.md)。
