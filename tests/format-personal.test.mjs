@@ -35,7 +35,7 @@ test('战绩按官方模式分组，wanmei按前端标为大师，近期使用�
   const data={paiweiRate:{total:10,total_rate:30},shenfenRate:{total_rate:40,emperor_rate:0,minister_rate:50,rebel_rate:60,provocateur_rate:25},guozhanRate:{total_rate:45,wei_rate:50,shu_rate:40,wu_rate:30,qun_rate:20,ye_rate:10},doudizhuRate:{total:20,total_rate:55,lord_rate:60,peasant_rate:50},medals:{wanmei:2,feicui:5},recent:[{name:'刘备'},{name:'赵云'}],g20:[0,1,0],future:{untouched:7}};
   const text=formatPersonal(result('records',data),{model:2}).text;
   for(const label of ['排位赛：','身份场：','国战：','斗地主：','主公胜率：0%','内奸胜率：25%','野心家胜率：10%','地主胜率：60%','排位赛最高段位：大师','近期使用武将：刘备、赵云','胜 负 胜'])assert(text.includes(label));
-  assert.doesNotMatch(text,/拥有武将/);assert.match(text,/#三国战绩 2 导出/);
+  assert.doesNotMatch(text,/拥有武将/);assert.match(text,/#sgs战绩 2 导出/);
   assert.deepEqual(exported('records',data).data,data);
 });
 
@@ -106,11 +106,11 @@ test('核心导出模式页码正确，群聊和其他本人无法读取已授�
     const bot=new SanguoshaMobile(root,{fetch:async()=>{throw new Error('No network is allowed in this test');}});
     const owner='100000001';bot.vault.set(owner,{session:{protocol:'app-qr-v1',token:'synthetic-session'}});
     const calls=[];bot.auth.queryOwn=async(kind,session,params)=>{calls.push({kind,params});return result(kind,[{Model:'国战',begin_time:'示例时间',result:'胜利',unknown:5}]);};
-    const out=await bot.handle({owner,privateChat:true,text:'#三国近期战绩 3 2 导出'});
+    const out=await bot.handle({owner,privateChat:true,text:'#sgs近期战绩 3 2 导出'});
     assert(out.file);assert.equal(out.file.name,'三国移动-recent.json');assert.equal(JSON.parse(out.file.data).data[0].unknown,5);
     assert.deepEqual(calls,[{kind:'recent',params:{model:3,page:2}}]);
-    assert.match((await bot.handle({owner,privateChat:true,group_id:'200000001',text:'#三国近期战绩 3 2 导出'})).text,/私聊/);
-    assert.match((await bot.handle({owner:'100000002',privateChat:true,text:'#三国近期战绩 导出'})).text,/请先/);
+    assert.match((await bot.handle({owner,privateChat:true,group_id:'200000001',text:'#sgs近期战绩 3 2 导出'})).text,/私聊/);
+    assert.match((await bot.handle({owner:'100000002',privateChat:true,text:'#sgs近期战绩 导出'})).text,/请先/);
     assert.equal(calls.length,1);
   }finally{fs.rmSync(root,{recursive:true,force:true});}
 });

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { SessionVault, VaultError } from '../lib/vault.mjs';
 import { SanguoshaMobile } from '../lib/core.mjs';
@@ -32,6 +32,28 @@ test('identities/session/challenge and QQ are wholly encrypted and owners isolat
   assert.equal(vault.key, undefined);
   assert.throws(() => vault.get('../../escape'), /QQ/);
   assert.throws(() => vault.get('owner:stream'), /QQ/);
+});
+
+test('historical v1 AAD survives the public project/prefix rename without changing the key or rewriting existing ciphertext', async t => {
+  const {root,key}=workspace(t),oldRoot=path.join(root,'SanguoshaMobile-Plugin'),newRoot=path.join(root,'SGS-Mobile-Plugin');
+  for(const target of [oldRoot,newRoot])assert.ok(path.resolve(target).startsWith(path.resolve(root)+path.sep));
+  fs.mkdirSync(path.join(oldRoot,'config'),{recursive:true});fs.mkdirSync(path.join(oldRoot,'data'));
+  // These legacy literals are protocol fixtures, not current branding/defaults.
+  const config={credentialsKey:key,prefix:'#三国'},state={[OWNER]:{identities:[{channel:'official',identityKey:'official:synthetic-legacy',gameId:'synthetic-legacy'}],session:{protocol:'app-qr-v1',scope:'sanguosha-community',gameVersion:'sanguosha-mobile',token:'synthetic-legacy-token'}}};
+  const aad=Buffer.from('SanguoshaMobile-Plugin/v1'),iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',Buffer.from(key,'hex'),iv);cipher.setAAD(aad);
+  const data=Buffer.concat([cipher.update(Buffer.from(JSON.stringify(state))),cipher.final()]);
+  const ciphertext=JSON.stringify({version:1,algorithm:'aes-256-gcm',iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),data:data.toString('base64')})+'\n';
+  fs.writeFileSync(path.join(oldRoot,'config/local.json'),JSON.stringify(config));fs.writeFileSync(path.join(oldRoot,'data/sessions.enc.json'),ciphertext);
+  assert.deepEqual(new SanguoshaMobile(oldRoot).vault.get(OWNER),state[OWNER]);
+  fs.renameSync(oldRoot,newRoot);config.prefix='#sgs';fs.writeFileSync(path.join(newRoot,'config/local.json'),JSON.stringify(config));
+  const bot=new SanguoshaMobile(newRoot,{fetch:()=>assert.fail('rename must not contact any account service')});
+  assert.deepEqual(bot.vault.get(OWNER),state[OWNER]);assert.equal(bot.config.read().credentialsKey,key);assert.equal(bot.config.read().prefix,'#sgs');
+  assert.equal(fs.readFileSync(bot.vault.file,'utf8'),ciphertext);assert.equal((await bot.handle({owner:OWNER,privateChat:true,text:'#三国账户'})).handled,false);
+  assert.match((await bot.handle({owner:OWNER,privateChat:true,text:'#sgs账户'})).text,/synthetic-legacy/);
+  bot.vault.update(OWNER,current=>({...current,migrationVerified:true}));
+  const envelope=JSON.parse(fs.readFileSync(bot.vault.file,'utf8')),decipher=createDecipheriv('aes-256-gcm',Buffer.from(key,'hex'),Buffer.from(envelope.iv,'base64'));decipher.setAAD(aad);decipher.setAuthTag(Buffer.from(envelope.tag,'base64'));
+  const written=JSON.parse(Buffer.concat([decipher.update(Buffer.from(envelope.data,'base64')),decipher.final()]).toString());
+  assert.deepEqual(written,{[OWNER]:{...state[OWNER],migrationVerified:true}});
 });
 
 test('wrong key preserves original data for read, set and direct full-map write', t => {
@@ -77,7 +99,7 @@ test('core logout clears only auth and retains encrypted identity even when upst
   bot.saveIdentities(OWNER, identities);
   bot.saveAuth(OWNER, { session: { token: 'synthetic-test-token' }, challenge: null });
   bot.auth.logout = async () => { throw new Error('Synthetic upstream outage'); };
-  const reply = await bot.handle({ owner: OWNER, privateChat: true, text: '#三国退出授权' });
+  const reply = await bot.handle({ owner: OWNER, privateChat: true, text: '#sgs退出授权' });
   assert.match(reply.text, /已删除/);
   assert.deepEqual(bot.vault.get(OWNER), { identities });
   assert.equal(fs.readFileSync(bot.vault.file, 'utf8').includes('synthetic-retained-identity'), false);

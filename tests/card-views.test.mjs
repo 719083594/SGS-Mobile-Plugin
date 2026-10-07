@@ -38,7 +38,7 @@ test('eleven labelled assets keep zero amounts, use prepared local icons and nev
   for (const label of ['元宝', '将魂', '雁翎', '招募令', '雁翎甲', '史诗宝珠', '欢乐豆', '点将卡', '手气卡', '心愿积分', '银币']) assert.ok(cards[0].html.includes(label), label);
   assert.equal(sources(cards[0].html).length, 11);
   assert.match(cards[0].html, /grid three/);
-  assert.match(cards[0].html, /#三国资产 导出/);
+  assert.match(cards[0].html, /#sgs资产 导出/);
   const missing = htmlFor('assets', { yb: 0, unknown: 99 }, { assetResolver: resolver });
   assert.match(missing, /元宝/);
   assert.doesNotMatch(missing, /将魂|unknown|99/);
@@ -97,7 +97,7 @@ test('records use official mode groups, conservative result codes, and recent-us
   const html = htmlFor('records', { paiweiRate: { total: 2, total_rate: 0 }, shenfenRate: { total_rate: 40, emperor_rate: 0, minister_rate: 50 },
     guozhanRate: { total_rate: 45, wei_rate: 50, ye_rate: 10 }, doudizhuRate: { total: 4, total_rate: 55, lord_rate: 60, peasant_rate: 50 },
     medals: { wanmei: 1, feicui: 5 }, g20: [0, 1, 2, 0.5, null, '0', '1'], recent: [{ name: '赵云' }] }, { assetResolver: resolver, model: 2 });
-  for (const text of ['排位赛', '身份场', '国战', '斗地主', '主公胜率', '野心家胜率', '地主胜率', '大师', '近期使用武将', '赵云', '#三国战绩 2 导出']) assert.ok(html.includes(text), text);
+  for (const text of ['排位赛', '身份场', '国战', '斗地主', '主公胜率', '野心家胜率', '地主胜率', '大师', '近期使用武将', '赵云', '#sgs战绩 2 导出']) assert.ok(html.includes(text), text);
   assert.equal((html.match(/class="result-cell win"/g) || []).length, 2);
   assert.equal((html.match(/class="result-cell lose"/g) || []).length, 2);
   assert.equal((html.match(/class="result-cell ">未知/g) || []).length, 3);
@@ -131,7 +131,7 @@ test('24 recent-use generals stay on one records card with or without existing s
     assert.equal((cards[0].html.match(/class="panel general"/g) || []).length, 24);
     const displayed = [...cards[0].html.matchAll(/class="general-name">([^<]+)<\/div>/g)].map(match => match[1]);
     assert.deepEqual(displayed, recent.map(row => row.name));
-    assert.match(cards[0].html, /#三国战绩 0 导出/);
+    assert.match(cards[0].html, /#sgs战绩 0 导出/);
     if (extra === statistics) {
       assert.match(cards[0].html, /排位赛最高段位/);
       assert.match(cards[0].html, /排位赛/);
@@ -165,7 +165,7 @@ test('skins, favorites, abilities and bestGeneral have dedicated titles and read
     assert.ok(html.includes('<title>' + title + '</title>'));
     assert.match(html, /合成条目/);
     assert.match(html, /合成说明/);
-    assert.ok(html.includes('#三国' + command + ' 导出'));
+    assert.ok(html.includes('#sgs' + command + ' 导出'));
     assert.doesNotMatch(html, /<pre\b|JSON|raw未知|&quot;rows&quot;/);
   }
 });
@@ -174,7 +174,7 @@ test('unverified protocol uses readable original fields instead of assigning old
   const html = htmlFor('assets', { yb: 2 }, {}, 'pc-scan-v7');
   assert.match(html, />yb<\/span>2/);
   assert.doesNotMatch(html, /元宝/);
-  assert.match(html, /#三国资产 导出/);
+  assert.match(html, /#sgs资产 导出/);
 });
 
 test('views escape injected markup, remove sensitive fields, and never alter input', () => {
@@ -195,10 +195,10 @@ test('unknown structures and empty responses offer the correct private export wi
   const unknown = htmlFor('newKind', { arbitrary: { future: '合成未来字段' } });
   assert.match(unknown, /<title>本人资料<\/title>/);
   assert.match(unknown, /合成未来字段/);
-  assert.match(unknown, /#三国个人资料 导出/);
+  assert.match(unknown, /#sgs个人资料 导出/);
   const empty = htmlFor('recent', []);
   assert.match(empty, /本次暂无可展示/);
-  assert.match(empty, /#三国近期战绩 0 1 导出/);
+  assert.match(empty, /#sgs近期战绩 0 1 导出/);
 });
 
 test('already-cleaned personal responses retain literal text and still escape HTML', () => {
@@ -229,7 +229,7 @@ test('personal cards cap long results at eight pages with an explicit complete-e
   for (const card of cards) {
     assert.match(card.html, /仅展示前 8 页（本次共 10 页）/);
     assert.match(card.html, /完整资料请导出/);
-    assert.match(card.html, /#三国武将收藏 导出/);
+    assert.match(card.html, /#sgs武将收藏 导出/);
   }
   const html = cards.map(card => card.html).join('\n');
   assert.match(html, /合成收藏-47/);
@@ -239,17 +239,17 @@ test('personal cards cap long results at eight pages with an explicit complete-e
 test('public IDs lead only to implemented commands and already-cleaned strings are not decoded twice', () => {
   const items = [{ id: 12, title: '&lt;合成条目&gt;', description: '<script>合成文本</script>' }];
   const heroes = buildPublicCards({ items }, { command: '武将', dataAlreadyRedacted: true })[0].html;
-  assert.match(heroes, /#三国武将 12/);
-  assert.doesNotMatch(heroes, /#三国详情/);
+  assert.match(heroes, /#sgs武将 12/);
+  assert.doesNotMatch(heroes, /#sgs详情/);
   assert.match(heroes, /&amp;lt;合成条目&amp;gt;/);
   assert.match(heroes, /&lt;script&gt;合成文本&lt;\/script&gt;/);
   assert.doesNotMatch(heroes, /<script\b/);
   for (const command of ['社区', '热榜', '攻略']) {
     const html = buildPublicCards({ items }, { command, dataAlreadyRedacted: true })[0].html;
     assert.match(html, /ID 12/);
-    assert.doesNotMatch(html, /#三国详情 12/);
+    assert.doesNotMatch(html, /#sgs详情 12/);
   }
-  assert.match(buildPublicCards({ items }, { command: '公告' })[0].html, /#三国详情 12/);
+  assert.match(buildPublicCards({ items }, { command: '公告' })[0].html, /#sgs详情 12/);
   const many = buildPublicCards({ items: Array.from({ length: 55 }, (_, index) => ({ id: index + 1, title: '合成公告' })) }, { command: '公告' });
   assert.equal(many.length, 8);
   assert.match(many[0].html, /仅展示前 8 页（本次共 10 页）/);

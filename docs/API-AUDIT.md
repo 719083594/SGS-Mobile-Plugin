@@ -79,7 +79,7 @@
 
 ## 原创插件模块
 
-`SanguoshaMobile-Plugin/lib/public.mjs` 仅做公开只读查询；所有列表统一 `{items, sourceUrl,...}`，单件带 `sourceUrl`。`lib/login.mjs` 实现登录能力状态和渠道隔离身份登记；不收集密码、验证码、Cookie、Token，不伪造成功。自动化测试覆盖移动版来源、武将变体、嵌套正文、响应隐私字段、受保护接口、URL跳转边界和渠道隔离；另有真实公开接口烟测。
+`SGS-Mobile-Plugin/lib/public.mjs` 仅做公开只读查询；所有列表统一 `{items, sourceUrl,...}`，单件带 `sourceUrl`。`lib/login.mjs` 实现登录能力状态和渠道隔离身份登记；不收集密码、验证码、Cookie、Token，不伪造成功。自动化测试覆盖移动版来源、武将变体、嵌套正文、响应隐私字段、受保护接口、URL跳转边界和渠道隔离；另有真实公开接口烟测。
 
 致谢应列杭州游卡网络技术有限公司/三国杀移动版官网、三国咸话公开社区 API；华为文档只作为登录能力研究依据，当前没有调用华为 API。请不要把未调用的接口列为已连接 API。
 

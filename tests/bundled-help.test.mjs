@@ -136,7 +136,7 @@ test('two readers retain separate public RAM bytes and never require a global ca
 
 test('shipped help JPEG matches the current release view source and default prefix',()=>{
  const root=new URL('../',import.meta.url);
- const read=createBundledHelpReader({root:fileURLToPath(root),defaultPrefix:'#三国'});
- const bytes=read({prefix:'#三国',private:false});
+ const read=createBundledHelpReader({root:fileURLToPath(root),defaultPrefix:'#sgs'});
+ const bytes=read({prefix:'#sgs',private:false});
  assert(Buffer.isBuffer(bytes));assert(bytes.length>1000);
 });

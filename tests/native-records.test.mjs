@@ -38,7 +38,7 @@ test('24 generals remain on a single private SVG, with or without all statistics
     assert.ok(cards[0].height>=100&&cards[0].height<=12000&&cards[0].width*cards[0].height<=12000000);
     const values=textContents(cards[0].svg);assert.deepEqual(values.filter(value=>value.startsWith('合成武将-')),data.recent.map(row=>row.name));
     assert.match(cards[0].svg,/Noto Sans CJK SC, WenQuanYi Micro Hei, DejaVu Sans/);
-    assert.ok(values.includes('更多字段：#三国战绩 0 导出'));assert.deepEqual(data,original);
+    assert.ok(values.includes('更多字段：#sgs战绩 0 导出'));assert.deepEqual(data,original);
   }
 });
 
@@ -102,7 +102,7 @@ test('portrait bytes are bounded per page and a large result is explicitly excer
   assert.equal((cards[0].svg.match(/<image\b/g)||[]).length,8);assert.ok(Buffer.byteLength(cards[0].svg)<=4*1024*1024);
   const data={g20:Array.from({length:161},()=>0),recent:recent(25)},limited=buildNativeRecordCards(result(data));
   assert.equal(limited.length,8);
-  for(const card of limited){assert.match(card.svg,/节选前 8 页（本次共 10 页）；完整资料请导出/);assert.match(card.svg,/#三国战绩 0 导出/);}
+  for(const card of limited){assert.match(card.svg,/节选前 8 页（本次共 10 页）；完整资料请导出/);assert.match(card.svg,/#sgs战绩 0 导出/);}
 });
 
 test('aggregate portrait dimension metadata stays within the native decoder pixel budget',()=>{
