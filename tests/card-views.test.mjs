@@ -121,12 +121,42 @@ test('recent matches paginate all known entries, display only proven fields and 
   assert.doesNotMatch(unknown, /class="match-result (?:win|lose)"/);
 });
 
-test('long recent-general lists have continuation cards and retain every known name', () => {
-  const data = { recent: Array.from({ length: 25 }, (_, index) => ({ name: '合成武将-' + index })) };
-  const cards = buildPersonalCards(result('records', data));
-  assert.equal(cards.length, 3);
-  const html = cards.map(card => card.html).join('\n');
-  for (let index = 0; index < 25; index++) assert.ok(html.includes('合成武将-' + index));
+test('24 recent-use generals stay on one records card with or without existing statistics', () => {
+  const recent = Array.from({ length: 24 }, (_, index) => ({ name: '合成武将-' + index }));
+  const statistics = { paiweiRate: { total: 100, total_rate: 50 }, medals: { wanmei: 1 }, g20: Array.from({ length: 20 }, (_, index) => index % 2) };
+  for (const extra of [{}, statistics]) {
+    const data = { ...extra, recent }, original = structuredClone(data);
+    const cards = buildPersonalCards(result('records', data));
+    assert.equal(cards.length, 1);
+    assert.equal((cards[0].html.match(/class="panel general"/g) || []).length, 24);
+    const displayed = [...cards[0].html.matchAll(/class="general-name">([^<]+)<\/div>/g)].map(match => match[1]);
+    assert.deepEqual(displayed, recent.map(row => row.name));
+    assert.match(cards[0].html, /#三国战绩 0 导出/);
+    if (extra === statistics) {
+      assert.match(cards[0].html, /排位赛最高段位/);
+      assert.match(cards[0].html, /排位赛/);
+      assert.equal((cards[0].html.match(/class="result-cell (?:win|lose)"/g) || []).length, 20);
+    }
+    assert.deepEqual(data, original);
+  }
+});
+
+test('25 recent-use generals have one continuation and retain every name exactly once', () => {
+  const recent = Array.from({ length: 25 }, (_, index) => ({ name: '合成武将-' + index }));
+  for (const extra of [{}, { paiweiRate: { total: 100, total_rate: 50 }, g20: [0, 1] }]) {
+    const cards = buildPersonalCards(result('records', { ...extra, recent }));
+    assert.equal(cards.length, 2);
+    assert.deepEqual(cards.map(card => (card.html.match(/class="panel general"/g) || []).length), [24, 1]);
+    const displayed = cards.flatMap(card => [...card.html.matchAll(/class="general-name">([^<]+)<\/div>/g)].map(match => match[1]));
+    assert.deepEqual(displayed, recent.map(row => row.name));
+    assert.match(cards[0].html, /1 \/ 2/);
+    assert.match(cards[1].html, /2 \/ 2/);
+    if (extra.paiweiRate) {
+      assert.match(cards[0].html, /排位赛/);
+      assert.equal((cards[0].html.match(/class="result-cell (?:win|lose)"/g) || []).length, 2);
+      assert.doesNotMatch(cards[1].html, /class="result-cell/);
+    }
+  }
 });
 
 test('skins, favorites, abilities and bestGeneral have dedicated titles and readable cards rather than raw JSON', () => {

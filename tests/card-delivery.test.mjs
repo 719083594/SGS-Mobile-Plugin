@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {SanguoshaMobile} from '../api.mjs';
-import {sendCardReply} from '../lib/card-reply.mjs';
+import {sendCardReply,CardReplyError} from '../lib/card-reply.mjs';
 
 async function workspace(fn){const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg-card-flow-'));try{await fn(root)}finally{fs.rmSync(root,{recursive:true,force:true})}}
 
@@ -34,4 +34,14 @@ test('群聊公开帮助仍可发送，私密卡片在生成前拒绝混合群�
  const output=[];
  assert.equal(await sendCardReply({card:{private:false}},{event:{group_id:'200000001',reply:async item=>output.push(item)},buildCards:async()=>[{html:'public'}],render:async()=>Buffer.from('synthetic-image'),image:bytes=>bytes}),true);
  assert.equal(output.length,1);assert(Buffer.isBuffer(output[0]));
+});
+
+
+test('后页失败明确保留已发送页数，第一页失败则保留原错误',async()=>{
+ const failure=new Error('synthetic-render-error'),output=[];
+ const options={event:{reply:async item=>output.push(item)},buildCards:()=>[{html:'one'},{html:'two'}],render:async card=>{if(card.html==='two')throw failure;return Buffer.from('synthetic-image')},image:bytes=>bytes};
+ await assert.rejects(sendCardReply({card:{private:true}},options),error=>error instanceof CardReplyError&&error.sent===1&&error.total===2&&error.cause===failure&&!error.message.includes('synthetic'));
+ assert.equal(output.length,1);
+ await assert.rejects(sendCardReply({card:{private:true}},{...options,render:async()=>{throw failure}}),error=>error===failure);
+ assert.equal(output.length,1);
 });
