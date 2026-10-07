@@ -24,7 +24,7 @@
 
 武将头像沿用 `resources/ui/assets/` 的官方素材和哈希清单。公开皮肤缩略图来自皮肤绘影堂 API 声明的 `sjwx-oss.sanguosha.cn/skins/image/` 原图，构建脚本匿名读取、校验栅格格式与尺寸后缩为本地 JPEG，来源和缩略图哈希记入 `resources/skin-gallery/manifest.json`。素材权利归游戏及各原作者。
 
-线上查询不会下载皮肤原图。只有官方条目 ID 与原图 URL 都匹配清单，才显示已验证本地图；新条目或图源变化显示明确占位，维护者可显式运行 `node scripts/build-skin-assets.mjs` 更新公开素材。构建器和线上读取器不读取账号、Cookie 或私有配置。动态目录图片通过同级 AI-Plugin 的共享原生渲染器在内存生成。
+线上查询不会下载皮肤原图。只有官方条目 ID 与原图 URL 都匹配清单，才显示已验证本地图；新条目或图源变化显示明确占位，维护者可显式运行 `node scripts/build-skin-assets.mjs` 更新公开素材。构建器和线上读取器不读取账号、Cookie 或私有配置。动态目录图片通过本插件原生转换器在内存生成，也可复用同级 AI-Plugin 的纯渲染服务。
 
 本人私聊的 `#sgs我的武将 [页]`、`#sgs我的皮肤 [页]` 使用独立的 `generalSkins` 受保护接口，并从 `gameInfo.generalNum/skinNum` 读取官方拥有总数。每页24项仅对本次已返回的 `generalList/skinList` 分页，不能用本地翻页获得接口未返回的条目。结果明确区分拥有总数与本次返回数量；缺少已核实的全量分页和势力字段，不能宣称全部拥有或完整本人吴国列表。`#sgs皮肤` 保留原始摘要与导出。社区 `general/getMyLike` 是“我的喜欢”，不是拥有武将；不将其与公开图鉴的 ID 擅自关联。个人条目、私密响应和渲染图只在内存处理，不打包到仓库。
 

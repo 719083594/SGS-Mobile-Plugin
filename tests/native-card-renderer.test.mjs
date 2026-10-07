@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {deflateSync} from 'node:zlib';
-import {createNativeCardRenderer,NativeCardRenderError} from '../lib/native-card-renderer.mjs';
+import {createNativeCardRenderer,NativeCardRenderError,getNativeRenderStatus} from '../lib/native-card-renderer.mjs';
 import {buildNativeRecordCards} from '../lib/native-records.mjs';
 
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
@@ -13,7 +13,7 @@ function fakeSharp({pending=null,error=null,result=null}={}){
     calls.push(['input',input,options]);
     return {jpeg(options){calls.push(['jpeg',options]);return this},timeout(options){calls.push(['timeout',options]);return this},async toBuffer(options){calls.push(['toBuffer',options]);if(pending)await pending;if(error)throw error;return result||{data:Buffer.from([255,216,255,217]),info:{format:'jpeg',width:Number(/width="(\d+)"/.exec(input.toString())[1]),height:Number(/height="(\d+)"/.exec(input.toString())[1])}}},toFile(){assert.fail('no private output files')},metadata(){assert.fail('no second decode or file metadata pass')}};
   };
-  sharp.cache=value=>calls.push(['cache',value]);sharp.concurrency=value=>calls.push(['concurrency',value]);return {sharp,calls};
+  sharp.versions={sharp:'0.35.5'};sharp.cache=value=>calls.push(['cache',value]);sharp.concurrency=value=>calls.push(['concurrency',value]);return {sharp,calls};
 }
 function chunk(type,data){const body=Buffer.concat([Buffer.from(type),data]);let crc=0xffffffff;for(const value of body){crc^=value;for(let bit=0;bit<8;bit++)crc=crc&1?0xedb88320^(crc>>>1):crc>>>1}const length=Buffer.alloc(4),sum=Buffer.alloc(4);length.writeUInt32BE(data.length);sum.writeUInt32BE((crc^0xffffffff)>>>0);return Buffer.concat([length,body,sum]);}
 function png(width=1,height=1,padding=0){const header=Buffer.alloc(13);header.writeUInt32BE(width);header.writeUInt32BE(height,4);header[8]=8;header[9]=6;return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(Buffer.from([0,230,170,80,255]))),...(padding?[chunk('tEXt',Buffer.concat([Buffer.from('QA\0'),Buffer.alloc(padding,65)]))]:[]),chunk('IEND',Buffer.alloc(0))]);}
@@ -45,7 +45,7 @@ test('unsafe XML, unsupported tags/attributes, entity obfuscation, external refe
 
 test('SVG size, canvas size, tree depth and node count are bounded before backend allocation',async()=>{
   let loaded=0;const render=createNativeCardRenderer({loadSharp:()=>{loaded++;return fakeSharp().sharp}});
-  for(const args of [{...card(),width:319},{...card(),width:1601},{...card(),height:12001},card('',1600,8000),{...card(),width:1080.5},{...card(),private:false},{...card(),svg:'x'.repeat(4*1024*1024+1)}])await assert.rejects(render(args),error=>error.code==='INVALID_NATIVE_CARD');
+  for(const args of [{...card(),width:319},{...card(),width:1601},{...card(),height:12001},card('',1600,8000),{...card(),width:1080.5},{...card(),private:undefined},{...card(),private:'true'},{...card(),svg:'x'.repeat(4*1024*1024+1)}])await assert.rejects(render(args),error=>error.code==='INVALID_NATIVE_CARD');
   for(const body of ['<g>'.repeat(33)+'</g>'.repeat(33),'<rect/>'.repeat(10001)])await assert.rejects(render(card(body)),error=>error.code==='UNSAFE_NATIVE_SVG');assert.equal(loaded,0);
 });
 
@@ -63,9 +63,12 @@ test('backend/import errors and invalid output are sanitized, and asynchronous m
   for(const result of [{data:Buffer.from('not a jpeg'),info:{format:'jpeg',width:1080,height:800}},{data:Buffer.from([255,216,255,217]),info:{format:'jpeg',width:1,height:1}},{data:oversized,info:{format:'jpeg',width:1080,height:800}}])await assert.rejects(createNativeCardRenderer({loadSharp:()=>fakeSharp({result}).sharp})(card()),error=>error.code==='INVALID_NATIVE_IMAGE');
 });
 
-test('one native pipeline is admitted across module copies and a pending pipeline is never unlocked by a caller deadline',async()=>{
-  const peer=await import('../lib/native-card-renderer.mjs?peer-copy');let release;const pending=new Promise(resolve=>{release=resolve}),first=fakeSharp({pending}),second=fakeSharp(),render=createNativeCardRenderer({loadSharp:()=>first.sharp}),other=peer.createNativeCardRenderer({loadSharp:()=>second.sharp});
-  const job=render(card());await flush();await assert.rejects(other(card()),error=>error.code==='NATIVE_RENDER_BUSY');assert.equal(second.calls.length,0);release();await job;assert.ok(Buffer.isBuffer(await other(card())));
+test('one native pipeline plus two FIFO waiters share admission across module copies',async()=>{
+  const peer=await import('../lib/native-card-renderer.mjs?peer-copy');let release;const pending=new Promise(resolve=>{release=resolve}),first=fakeSharp({pending}),second=fakeSharp(),third=fakeSharp(),overflow=fakeSharp();
+  const job=createNativeCardRenderer({loadSharp:()=>first.sharp})(card());await flush();
+  const next=peer.createNativeCardRenderer({loadSharp:()=>second.sharp})({...card(),private:false}),last=createNativeCardRenderer({loadSharp:()=>third.sharp})(card());
+  try{assert.deepEqual(getNativeRenderStatus(),{active:1,queued:2,maxQueued:2});await assert.rejects(createNativeCardRenderer({loadSharp:()=>overflow.sharp})(card()),error=>error.code==='NATIVE_RENDER_BUSY');assert.equal(second.calls.length,0);assert.equal(third.calls.length,0);assert.equal(overflow.calls.length,0)}finally{release();await Promise.all([job,next,last]);}
+  assert.deepEqual(getNativeRenderStatus(),{active:0,queued:0,maxQueued:2});
 });
 
 test('real pinned sharp converts a synthetic private SVG to an exact JPEG Buffer without browser or file output APIs',async()=>{

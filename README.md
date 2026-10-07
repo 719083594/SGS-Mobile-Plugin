@@ -2,7 +2,7 @@
 
 面向 [三国杀移动版](https://www.sanguosha.cn/) 的原创插件，聚合移动版官网资料与官方「[三国咸话](https://xh.sanguosha.cn/web/2)」社区。仅支持移动版，不使用 OL、十周年、欢乐三国杀等版本接口。
 
-Bot 的帮助、公开资料及本人查询默认显示图片卡片：帮助分类、11 种道具独立图标、战绩胜率与胜负列表、近期对局和本人拥有分页。默认帮助直接读取预生成文件；标准动态卡片使用同级 AI-Plugin 的共享原生渲染服务，个人 SVG 和图片只在内存生成，账户继续加密保存。命令末尾加 `文字` 可看文字版；支持导出的本人查询加 `导出` 可发送已脱敏 JSON。渲染接入见 [渲染说明](docs/RENDERING.md)，素材证据见 [素材清单](docs/ASSETS.md)。
+Bot 的帮助、公开资料及本人查询默认显示图片卡片：帮助分类、11 种道具独立图标、战绩胜率与胜负列表、近期对局和本人拥有分页。默认帮助直接读取预生成文件；标准动态卡片自带原生渲染，也可复用同级 AI-Plugin 的纯渲染服务，个人 SVG 和图片只在内存生成，账户继续加密保存。命令末尾加 `文字` 可看文字版；支持导出的本人查询加 `导出` 可发送已脱敏 JSON。渲染接入见 [渲染说明](docs/RENDERING.md)，素材证据见 [素材清单](docs/ASSETS.md)。
 
 当前统一使用官方微信扫码 `pc-scan-v7`：本人资料、游戏资料、将力、能力、分模式战绩与胜率、近期对局、擅长武将、11类资产，以及本人拥有武将/皮肤分页均已接入当前官方接口并进行授权只读验证。本人拥有列表每页12项，武将支持势力筛选。旧 APP 扫码入口及旧版个人查询协议已移除，不混用凭据或回退旧接口。**官号、华为游戏独立登录仍未接通**；当前扫码是官方三国咸话社区授权。接口范围与证据见 [API 审计](docs/API-AUDIT.md)，早期验收作为历史记录保存在 [VERIFICATION.md](docs/VERIFICATION.md)。
 
@@ -26,7 +26,7 @@ node cli.mjs command YOUR_QQ "#sgs帮助"
 node cli.mjs command YOUR_QQ "#sgs资讯"
 ```
 
-TRSS/云崽：将本目录安装到 Bot 的 `plugins/SGS-Mobile-Plugin`，在插件目录执行安装、初始化，将 `config/local.json` 的 `adapter` 改为 `"yunzai"`，重启 Bot，再发送 `#sgs帮助`。动态图另需同级 `plugins/AI-Plugin` 包含 `src/rendering/index.mjs`；复用本插件安装的 sharp 0.35.5，无需 AI 模型或密钥。`orangejuice.plugin.json` 提供橙汁中文配置入口。`adapter: "none"` 只启用 CLI/独立 API，不向云崽注册命令。
+TRSS/云崽：将本目录安装到 Bot 的 `plugins/SGS-Mobile-Plugin`，在插件目录执行安装、初始化，将 `config/local.json` 的 `adapter` 改为 `"yunzai"`，重启 Bot，再发送 `#sgs帮助`。动态图使用本插件安装的 sharp 0.35.5，可独立转换；同级 `plugins/AI-Plugin` 包含 `src/rendering/index.mjs` 时优先复用其纯渲染服务，无需 AI 模型或密钥。`orangejuice.plugin.json` 提供橙汁中文配置入口。`adapter: "none"` 只启用 CLI/独立 API，不向云崽注册命令。
 
 初始化自动生成实例加密密钥。需要扫码和本人查询时，确认实例 `personalDataEnabled: true`；设为 `false` 停止创建授权、查询扫码状态和读取本人数据，仍允许退出已有授权。完整参数表与上线检查见 [功能与配置清单](docs/FEATURES.md)。修改适配器、前缀、超时或缓存后重启，使已创建的客户端与命令规则使用新配置。
 
